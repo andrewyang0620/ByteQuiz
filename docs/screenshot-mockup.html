@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ByteQuiz — Screenshot</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Courier New',Courier,monospace;background:#FAF9F6;padding:40px;display:flex;justify-content:center}
+  .app{background:#FAF9F6;border-radius:12px;border:0.5px solid #D4C9B0;overflow:hidden;width:900px;box-shadow:0 2px 24px rgba(0,0,0,0.08)}
+  .nav{background:#F0E9D8;border-bottom:0.5px solid #D4C9B0;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+  .logo-text{font-size:18px;font-weight:700;color:#2C2C2A;letter-spacing:-0.5px}
+  .logo-text span{color:#7A9A68}
+  .nav-links{display:flex;gap:24px;align-items:center}
+  .nav-link{font-size:13px;color:#5C5A54;font-family:inherit;cursor:pointer}
+  .nav-btn{background:#B8D4A0;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;color:#27500A;font-family:inherit;cursor:pointer}
+  .main{display:flex;height:520px}
+  .sidebar{width:220px;background:#F5F0E6;border-right:0.5px solid #D4C9B0;padding:20px 16px;flex-shrink:0}
+  .sidebar-title{font-size:10px;font-weight:700;color:#8C8A82;letter-spacing:2px;margin-bottom:10px}
+  .filter-group{margin-bottom:22px}
+  .filter-pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;margin:2px 2px 2px 0;cursor:pointer;font-family:inherit}
+  .pill-active{background:#B8D4A0;color:#27500A;font-weight:700}
+  .pill{background:#E8E0D0;color:#5C5A54}
+  .pill-easy{background:#C8DEB8;color:#2A5018}
+  .pill-med{background:#D8CC98;color:#4A3E10}
+  .pill-hard{background:#D8A898;color:#501818}
+  .content{flex:1;overflow:hidden;padding:20px}
+  .search-bar{width:100%;background:#F0E9D8;border:0.5px solid #D4C9B0;border-radius:8px;padding:9px 14px;font-size:13px;font-family:inherit;color:#2C2C2A;margin-bottom:16px}
+  .list-header{display:grid;grid-template-columns:40px 1fr 80px 90px 80px;gap:8px;padding:0 12px 8px;font-size:10px;color:#8C8A82;font-weight:700;letter-spacing:1px}
+  .problem-row{display:grid;grid-template-columns:40px 1fr 80px 90px 80px;gap:8px;padding:10px 12px;border-radius:8px;margin-bottom:4px;background:#FDFCF8;border:0.5px solid #E8E0D0;align-items:center;cursor:pointer}
+  .problem-row:hover{background:#F5F0E6}
+  .prob-num{font-size:12px;color:#8C8A82}
+  .prob-title{font-size:13px;color:#2C2C2A;font-weight:500}
+  .badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
+  .badge-easy{background:#C8DEB8;color:#2A5018}
+  .badge-med{background:#D8CC98;color:#4A3E10}
+  .badge-hard{background:#D8A898;color:#501818}
+  .badge-cat{background:#D0C8E8;color:#3C3080;font-weight:500}
+  .badge-sql{background:#C8D8E8;color:#183050}
+  .prob-rate{font-size:12px;color:#8C8A82}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="nav">
+    <div class="logo-text">Byte<span>Quiz</span></div>
+    <div class="nav-links">
+      <span class="nav-link">Problems</span>
+      <span class="nav-link">Categories</span>
+      <button class="nav-btn">+ Add Problem</button>
+    </div>
+  </nav>
+  <div class="main">
+    <aside class="sidebar">
+      <div class="filter-group">
+        <div class="sidebar-title">DIFFICULTY</div>
+        <span class="filter-pill pill-active">All</span>
+        <span class="filter-pill pill-easy">Easy</span>
+        <span class="filter-pill pill-med">Medium</span>
+        <span class="filter-pill pill-hard">Hard</span>
+      </div>
+      <div class="filter-group">
+        <div class="sidebar-title">CATEGORY</div>
+        <span class="filter-pill pill-active">All</span><br>
+        <span class="filter-pill pill" style="margin-top:4px">Array</span>
+        <span class="filter-pill pill">Tree</span>
+        <span class="filter-pill pill">SQL</span>
+        <span class="filter-pill pill">八股文</span>
+        <span class="filter-pill pill">DP</span>
+        <span class="filter-pill pill">系统设计</span>
+      </div>
+    </aside>
+    <div class="content">
+      <input class="search-bar" placeholder="Search problems...">
+      <div class="list-header">
+        <span>#</span><span>TITLE</span><span>DIFFICULTY</span><span>CATEGORY</span><span>ACCEPTANCE</span>
+      </div>
+      <div class="problem-row">
+        <span class="prob-num">1</span><span class="prob-title">Two Sum</span>
+        <span class="badge badge-easy">Easy</span><span class="badge badge-cat">Array</span><span class="prob-rate">72.4%</span>
+      </div>
+      <div class="problem-row">
+        <span class="prob-num">2</span><span class="prob-title">Valid Parentheses</span>
+        <span class="badge badge-easy">Easy</span><span class="badge badge-cat">Stack</span><span class="prob-rate">68.1%</span>
+      </div>
+      <div class="problem-row" style="border-color:#B8D4A0;background:#F4F8F0">
+        <span class="prob-num">3</span><span class="prob-title">Maximum Subarray</span>
+        <span class="badge badge-med">Medium</span><span class="badge badge-cat">DP</span><span class="prob-rate">54.3%</span>
+      </div>
+      <div class="problem-row">
+        <span class="prob-num">4</span><span class="prob-title">Select Top N Customers</span>
+        <span class="badge badge-easy">Easy</span><span class="badge badge-sql">SQL</span><span class="prob-rate">81.2%</span>
+      </div>
+      <div class="problem-row">
+        <span class="prob-num">5</span><span class="prob-title">HTTP vs HTTPS</span>
+        <span class="badge badge-easy">Easy</span>
+        <span class="badge" style="background:#E0D4C0;color:#3C2C10">八股文</span>
+        <span class="prob-rate">90.5%</span>
+      </div>
+      <div class="problem-row">
+        <span class="prob-num">6</span><span class="prob-title">Binary Tree Level Order</span>
+        <span class="badge badge-med">Medium</span><span class="badge badge-cat">Tree</span><span class="prob-rate">59.8%</span>
+      </div>
+      <div class="problem-row">
+        <span class="prob-num">7</span><span class="prob-title">LRU Cache</span>
+        <span class="badge badge-hard">Hard</span><span class="badge badge-cat">HashTable</span><span class="prob-rate">38.2%</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
