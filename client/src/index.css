@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-950 text-gray-100 font-sans;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded-full;
+  }
+}
+
+@layer components {
+  .badge-easy   { @apply bg-green-900 text-green-300 text-xs font-semibold px-2 py-0.5 rounded; }
+  .badge-medium { @apply bg-yellow-900 text-yellow-300 text-xs font-semibold px-2 py-0.5 rounded; }
+  .badge-hard   { @apply bg-red-900 text-red-300 text-xs font-semibold px-2 py-0.5 rounded; }
+
+  .btn-primary {
+    @apply bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-100 text-sm font-medium px-4 py-2 rounded transition-colors;
+  }
+  .prose-dark {
+    @apply prose prose-invert prose-sm max-w-none
+           prose-code:bg-gray-800 prose-code:text-green-300 prose-code:rounded prose-code:px-1
+           prose-pre:bg-gray-800 prose-pre:border prose-pre:border-gray-700;
+  }
+}
