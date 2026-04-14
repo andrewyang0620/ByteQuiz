@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./docs/bytequiz_logo.svg" alt="ByteQuiz Logo" width="240" />
+<img src="./docs/bytequiz_logo.svg" alt="ByteQuiz Logo" width="800" />
 
-  <h1>⬡ ByteQuiz</h1>
+  <!-- <h1>ByteQuiz</h1> -->
   <p><strong>A self-hosted coding interview practice platform</strong></p>
   <p>Practice algorithms, SQL, system design, and 八股文 — all in one place.</p>
 </div>
