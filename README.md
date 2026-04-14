@@ -26,7 +26,7 @@ npm run dev
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS |
 | Code Editor | Monaco Editor (VS Code engine) |
 | Backend | Node.js + Express + TypeScript |
-| Database | SQLite via better-sqlite3 |
+| Database | SQLite via node:sqlite (built-in Node.js 22+) |
 | Code Execution | Node.js `vm` module (sandboxed) |
 
 ---

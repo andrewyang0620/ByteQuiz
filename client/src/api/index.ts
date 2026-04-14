@@ -6,12 +6,23 @@ export interface Problem {
   id: number;
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  category: string;
   tags: string[];
-  acceptance_rate: number;
+}
+
+export interface Example {
+  input: string;
+  output: string;
+  explanation?: string;
 }
 
 export interface ProblemDetail extends Problem {
   description: string;
+  examples: Example[];
+  constraints?: string;
+  solution?: string;
+  solution_explanation?: string;
+  test_cases: string;
 }
 
 export interface RunResult {
@@ -27,39 +38,36 @@ export interface ExecuteResult {
   status: 'Accepted' | 'Wrong Answer' | 'Runtime Error' | 'Time Limit Exceeded';
   results: RunResult[];
   runtime_ms: number;
-  submissionId?: number;
 }
 
-export interface Submission {
-  id: number;
-  problem_id: number;
-  problem_title: string;
-  language: string;
-  status: string;
-  runtime_ms: number;
-  submitted_at: string;
-  code?: string;
+export interface NewProblem {
+  title: string;
+  difficulty: string;
+  category: string;
+  tags: string[];
+  description: string;
+  examples: Example[];
+  constraints?: string;
+  solution?: string;
+  solution_explanation?: string;
+  test_cases: Array<{ input: unknown[]; expected_output: unknown }>;
 }
+
+export const CATEGORIES = [
+  'Array','String','LinkedList','Tree','Graph',
+  'DynamicProgramming','Stack','Queue','HashTable','BinarySearch','Sorting','Math',
+];
 
 // Problems
-export const getProblems = (params?: { difficulty?: string; tag?: string; search?: string }) =>
+export const getProblems = (params?: { difficulty?: string; category?: string; tag?: string; search?: string }) =>
   api.get<Problem[]>('/problems', { params }).then(r => r.data);
 
 export const getProblem = (id: number) =>
   api.get<ProblemDetail>(`/problems/${id}`).then(r => r.data);
 
+export const createProblem = (data: NewProblem) =>
+  api.post<{ id: number }>('/problems', data).then(r => r.data);
+
 export const runCode = (id: number, code: string, language: string) =>
   api.post<ExecuteResult>(`/problems/${id}/run`, { code, language }).then(r => r.data);
 
-export const submitCode = (id: number, code: string, language: string) =>
-  api.post<ExecuteResult>(`/problems/${id}/submit`, { code, language }).then(r => r.data);
-
-export const getSolution = (id: number) =>
-  api.get<{ solution: string }>(`/problems/${id}/solution`).then(r => r.data);
-
-// Submissions
-export const getSubmissions = () =>
-  api.get<Submission[]>('/submissions').then(r => r.data);
-
-export const getSubmission = (id: number) =>
-  api.get<Submission>(`/submissions/${id}`).then(r => r.data);
