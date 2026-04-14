@@ -171,20 +171,22 @@ export default function EditProblemPage() {
       setFormError('Please fill in all required fields (Title, Difficulty, Category, Description).');
       return;
     }
-    if (testCases.some(tc => !tc.input.trim() || !tc.expected_output.trim())) {
+    if (testCases.length > 0 && testCases.some(tc => !tc.input.trim() || !tc.expected_output.trim())) {
       setFormError('All test cases must have Input and Expected Output filled in.');
       return;
     }
 
-    let parsedTestCases: Array<{ input: unknown; expected_output: unknown }>;
-    try {
-      parsedTestCases = testCases.map(tc => ({
-        input: JSON.parse(tc.input),
-        expected_output: JSON.parse(tc.expected_output),
-      }));
-    } catch {
-      setFormError('Test case Input/Expected Output must be valid JSON (e.g. [[1,2],3] or true).');
-      return;
+    let parsedTestCases: Array<{ input: unknown; expected_output: unknown }> = [];
+    if (testCases.length > 0) {
+      try {
+        parsedTestCases = testCases.map(tc => ({
+          input: JSON.parse(tc.input),
+          expected_output: JSON.parse(tc.expected_output),
+        }));
+      } catch {
+        setFormError('Test case Input/Expected Output must be valid JSON (e.g. [[1,2],3] or true).');
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -324,7 +326,7 @@ export default function EditProblemPage() {
 
         {/* Test Cases */}
         <div style={{ ...SECTION_STYLE, borderBottom: 'none' }}>
-          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Test Cases * <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(values as JSON)</span></label>
+          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Test Cases <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(optional, values as JSON)</span></label>
           <TestCaseFields cases={testCases} onChange={setTestCases} />
         </div>
 

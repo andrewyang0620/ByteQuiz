@@ -7,7 +7,7 @@ import problemsRouter from './routes/problems';
 import categoriesRouter from './routes/categories';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 47291;
 
 app.use(cors({
   origin: [
@@ -31,6 +31,13 @@ app.use('/api/categories', categoriesRouter);
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Serve built frontend
+const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+app.use(express.static(clientDist));
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'));
 });
 
 app.listen(PORT, () => {

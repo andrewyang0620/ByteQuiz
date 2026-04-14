@@ -84,7 +84,7 @@ router.post('/', (req: Request, res: Response) => {
   const { title, difficulty, category_id, tags, description, examples, constraints,
           solution, solution_explanation, test_cases } = req.body as Record<string, unknown>;
 
-  if (!title || !difficulty || !category_id || !description || !examples || !test_cases) {
+  if (!title || !difficulty || !category_id || !description) {
     res.status(400).json({ error: 'Missing required fields.' });
     return;
   }
