@@ -121,7 +121,7 @@ export default function ProblemListPage() {
                     background: idx % 2 === 0 ? 'var(--color-bg)' : 'var(--color-surface)',
                   }}
                 >
-                  <td className="px-4 py-3" style={{ color: 'var(--color-text-muted)' }}>{p.id}</td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-muted)' }}>{idx + 1}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Link
