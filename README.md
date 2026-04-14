@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./docs/bytequiz_logo.svg" alt="ByteQuiz Logo" width="80" />
+<img src="./docs/bytequiz_logo.svg" alt="ByteQuiz Logo" width="240" />
 
   <h1>⬡ ByteQuiz</h1>
   <p><strong>A self-hosted coding interview practice platform</strong></p>
