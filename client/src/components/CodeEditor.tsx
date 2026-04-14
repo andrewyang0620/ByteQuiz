@@ -10,6 +10,8 @@ const MONACO_LANGUAGE: Record<string, string> = {
   javascript: 'javascript',
   python: 'python',
   java: 'java',
+  sql: 'sql',
+  text: 'plaintext',
 };
 
 export default function CodeEditor({ language, value, onChange }: CodeEditorProps) {

@@ -60,7 +60,7 @@ export interface NewProblem {
   constraints?: string;
   solution?: string;
   solution_explanation?: string;
-  test_cases: Array<{ input: unknown[]; expected_output: unknown }>;
+  test_cases: Array<{ input: unknown; expected_output: unknown }>;
 }
 
 // Categories
@@ -70,8 +70,8 @@ export const getCategories = () =>
 export const createCategory = (data: { name: string; color: string }) =>
   api.post<Category>('/categories', data).then(r => r.data);
 
-export const deleteCategory = (id: number) =>
-  api.delete(`/categories/${id}`);
+export const deleteCategory = (id: number, force = false) =>
+  api.delete(`/categories/${id}${force ? '?force=true' : ''}`);
 
 // Problems
 export const getProblems = (params?: { difficulty?: string; category?: string; tag?: string; search?: string }) =>
@@ -82,6 +82,12 @@ export const getProblem = (id: number) =>
 
 export const createProblem = (data: NewProblem) =>
   api.post<{ id: number }>('/problems', data).then(r => r.data);
+
+export const updateProblem = (id: number, data: NewProblem) =>
+  api.put<{ id: number }>(`/problems/${id}`, data).then(r => r.data);
+
+export const deleteProblem = (id: number) =>
+  api.delete(`/problems/${id}`);
 
 export const runCode = (id: number, code: string, language: string) =>
   api.post<ExecuteResult>(`/problems/${id}/run`, { code, language }).then(r => r.data);

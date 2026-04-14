@@ -115,6 +115,54 @@ router.post('/', (req: Request, res: Response) => {
   res.status(201).json({ id: result.lastInsertRowid });
 });
 
+// PUT /api/problems/:id — update a problem
+router.put('/:id', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const existing = db.prepare('SELECT id FROM problems WHERE id = ?').get(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Problem not found' }); return; }
+
+  const { title, difficulty, category_id, tags, description, examples, constraints,
+          solution, solution_explanation, test_cases } = req.body as Record<string, unknown>;
+
+  if (!title || !difficulty || !category_id || !description) {
+    res.status(400).json({ error: 'Missing required fields.' });
+    return;
+  }
+  if (!['Easy','Medium','Hard'].includes(difficulty as string)) {
+    res.status(400).json({ error: 'Invalid difficulty.' });
+    return;
+  }
+
+  const cat = db.prepare('SELECT id FROM categories WHERE id = ?').get(category_id as number);
+  if (!cat) { res.status(400).json({ error: 'Invalid category_id.' }); return; }
+
+  const tagsStr = Array.isArray(tags) ? JSON.stringify(tags) : (tags as string || '[]');
+  const examplesStr = Array.isArray(examples) ? JSON.stringify(examples) : (examples as string || '[]');
+  const testCasesStr = Array.isArray(test_cases) ? JSON.stringify(test_cases) : (test_cases as string || '[]');
+
+  db.prepare(`
+    UPDATE problems SET title=?, difficulty=?, category_id=?, tags=?, description=?,
+      examples=?, constraints=?, solution=?, solution_explanation=?, test_cases=?
+    WHERE id=?
+  `).run(
+    title as string, difficulty as string, category_id as number, tagsStr,
+    description as string, examplesStr, (constraints as string) || '',
+    (solution as string) || '', (solution_explanation as string) || '', testCasesStr,
+    req.params.id
+  );
+
+  res.json({ id: Number(req.params.id) });
+});
+
+// DELETE /api/problems/:id
+router.delete('/:id', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const existing = db.prepare('SELECT id FROM problems WHERE id = ?').get(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Problem not found' }); return; }
+  db.prepare('DELETE FROM problems WHERE id = ?').run(req.params.id);
+  res.status(204).end();
+});
+
 // POST /api/problems/:id/run � run sample test cases
 router.post('/:id/run', async (req: Request, res: Response) => {
   const db = getDb(req);

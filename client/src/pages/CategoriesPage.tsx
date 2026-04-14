@@ -23,7 +23,9 @@ export default function CategoriesPage() {
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
 
-  const [confirmDelete, setConfirmDelete] = useState<Category | null>(null);
+  // null = closed, { cat, force } = open
+  const [modal, setModal] = useState<{ cat: Category; force: boolean } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
   const load = () => {
@@ -53,16 +55,33 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!confirmDelete) return;
+  // Called when user clicks Delete on a custom category
+  const handleDeleteClick = (cat: Category) => {
+    setDeleteError('');
+    setModal({ cat, force: false });
+  };
+
+  // Called when user confirms in the modal
+  const handleDeleteConfirm = async (force: boolean) => {
+    if (!modal) return;
+    setDeleting(true);
     setDeleteError('');
     try {
-      await deleteCategory(confirmDelete.id);
-      setConfirmDelete(null);
+      await deleteCategory(modal.cat.id, force);
+      setModal(null);
       load();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setDeleteError(msg || 'Failed to delete category.');
+      const status = (err as { response?: { status?: number; data?: { error?: string; problem_count?: number } } })?.response?.status;
+      const data = (err as { response?: { data?: { error?: string; problem_count?: number } } })?.response?.data;
+      if (status === 409 && data?.problem_count) {
+        // Show force-delete confirmation
+        setModal({ cat: { ...modal.cat, problem_count: data.problem_count }, force: true });
+        setDeleteError('');
+      } else {
+        setDeleteError(data?.error || 'Failed to delete category.');
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -107,17 +126,11 @@ export default function CategoriesPage() {
                 ))}
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={adding}
-              className="btn-primary disabled:opacity-50 whitespace-nowrap px-4 py-2"
-            >
+            <button type="submit" disabled={adding} className="btn-primary disabled:opacity-50 whitespace-nowrap px-4 py-2">
               {adding ? 'Adding…' : '+ Add'}
             </button>
           </div>
-          {addError && (
-            <p className="mt-2 text-xs" style={{ color: '#7A200E' }}>{addError}</p>
-          )}
+          {addError && <p className="mt-2 text-xs" style={{ color: '#7A200E' }}>{addError}</p>}
         </form>
       </div>
 
@@ -134,7 +147,7 @@ export default function CategoriesPage() {
                 <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--color-text-muted)' }}>Category</th>
                 <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--color-text-muted)' }}>Problems</th>
                 <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--color-text-muted)' }}>Type</th>
-                <th className="px-4 py-3 w-20" />
+                <th className="px-4 py-3 w-24" />
               </tr>
             </thead>
             <tbody>
@@ -147,10 +160,7 @@ export default function CategoriesPage() {
                   }}
                 >
                   <td className="px-4 py-3">
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded"
-                      style={{ background: cat.color, color: 'var(--color-text-primary)' }}
-                    >
+                    <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: cat.color, color: 'var(--color-text-primary)' }}>
                       {cat.name}
                     </span>
                   </td>
@@ -163,10 +173,16 @@ export default function CategoriesPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {cat.is_default ? (
-                      <span className="text-xs" style={{ color: 'var(--color-text-muted)', opacity: 0.4 }}>Delete</span>
+                      <span
+                        title="Built-in categories cannot be deleted"
+                        className="text-xs cursor-not-allowed select-none"
+                        style={{ color: 'var(--color-text-muted)', opacity: 0.35 }}
+                      >
+                        Delete
+                      </span>
                     ) : (
                       <button
-                        onClick={() => { setDeleteError(''); setConfirmDelete(cat); }}
+                        onClick={() => handleDeleteClick(cat)}
                         className="text-xs hover:underline"
                         style={{ color: '#7A200E' }}
                       >
@@ -182,48 +198,51 @@ export default function CategoriesPage() {
       )}
 
       {/* Delete confirm modal */}
-      {confirmDelete && (
+      {modal && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50"
-          style={{ background: 'rgba(44,44,42,0.35)' }}
-          onClick={() => setConfirmDelete(null)}
+          style={{ background: 'rgba(44,44,42,0.4)' }}
+          onClick={() => !deleting && setModal(null)}
         >
           <div
             className="rounded-xl p-6 max-w-sm w-full mx-4 shadow-lg"
             style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-              Delete "{confirmDelete.name}"?
+            <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
+              Delete "{modal.cat.name}"?
             </h3>
-            {confirmDelete.problem_count > 0 ? (
+
+            {modal.force ? (
               <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-                This category has {confirmDelete.problem_count} problem(s). Reassign them before deleting.
+                This category has <strong>{modal.cat.problem_count}</strong> problem(s).
+                After deletion, those problems will be moved to <em>Uncategorized</em>.
+                <br /><br />Confirm delete?
               </p>
             ) : (
               <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                 This action cannot be undone.
               </p>
             )}
-            {deleteError && (
-              <p className="text-xs mb-3" style={{ color: '#7A200E' }}>{deleteError}</p>
-            )}
+
+            {deleteError && <p className="text-xs mb-3" style={{ color: '#7A200E' }}>{deleteError}</p>}
+
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setConfirmDelete(null)}
-                className="btn-secondary px-4 py-2 text-xs"
+                onClick={() => !deleting && setModal(null)}
+                disabled={deleting}
+                className="btn-secondary px-4 py-2 text-xs disabled:opacity-50"
               >
                 Cancel
               </button>
-              {confirmDelete.problem_count === 0 && (
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-                  style={{ background: '#E8B0A0', color: '#7A200E', border: '1px solid #C4806C' }}
-                >
-                  Delete
-                </button>
-              )}
+              <button
+                onClick={() => handleDeleteConfirm(modal.force)}
+                disabled={deleting}
+                className="text-xs font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                style={{ background: '#E8B0A0', color: '#7A200E', border: '1px solid #C4806C' }}
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
             </div>
           </div>
         </div>

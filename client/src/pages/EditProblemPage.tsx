@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { createProblem, getCategories, Category, Example } from '../api';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { getProblem, updateProblem, getCategories, Category, Example } from '../api';
 
 interface TestCaseForm { input: string; expected_output: string; }
 
@@ -42,8 +42,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
 
 function ExampleFields({ examples, onChange }: { examples: Example[]; onChange: (e: Example[]) => void }) {
   const update = (i: number, field: keyof Example, value: string) => {
-    const next = examples.map((ex, idx) => idx === i ? { ...ex, [field]: value } : ex);
-    onChange(next);
+    onChange(examples.map((ex, idx) => idx === i ? { ...ex, [field]: value } : ex));
   };
   const add = () => onChange([...examples, { input: '', output: '' }]);
   const remove = (i: number) => onChange(examples.filter((_, idx) => idx !== i));
@@ -54,17 +53,15 @@ function ExampleFields({ examples, onChange }: { examples: Example[]; onChange: 
         <div key={i} className="rounded-lg p-4 relative" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>Example {i + 1}</span>
-            {examples.length > 1 && (
-              <button onClick={() => remove(i)} className="text-xs hover:opacity-70" style={{ color: '#8B2A1A' }}>Remove</button>
-            )}
+            <button onClick={() => remove(i)} className="text-xs hover:opacity-70" style={{ color: '#8B2A1A' }}>Remove</button>
           </div>
           <div className="space-y-2">
             <div>
-              <label style={{ ...LABEL_STYLE, fontSize: 11 }}>Input *</label>
+              <label style={{ ...LABEL_STYLE, fontSize: 11 }}>Input</label>
               <input value={ex.input} onChange={e => update(i, 'input', e.target.value)} className="input-base" />
             </div>
             <div>
-              <label style={{ ...LABEL_STYLE, fontSize: 11 }}>Output *</label>
+              <label style={{ ...LABEL_STYLE, fontSize: 11 }}>Output</label>
               <input value={ex.output} onChange={e => update(i, 'output', e.target.value)} className="input-base" />
             </div>
             <div>
@@ -113,26 +110,58 @@ function TestCaseFields({ cases, onChange }: { cases: TestCaseForm[]; onChange: 
   );
 }
 
-export default function AddProblemPage() {
+export default function EditProblemPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageError, setPageError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState('');
-  const [categoryId, setCategoryId] = useState<number | ''>('');  
-
-  useEffect(() => {
-    getCategories().then(setCategories).catch(() => {});
-  }, []);
+  const [categoryId, setCategoryId] = useState<number | ''>('');
   const [tags, setTags] = useState<string[]>([]);
   const [description, setDescription] = useState('');
-  const [examples, setExamples] = useState<Example[]>([{ input: '', output: '' }]);
+  const [examples, setExamples] = useState<Example[]>([]);
   const [constraints, setConstraints] = useState('');
   const [solution, setSolution] = useState('');
   const [solutionExplanation, setSolutionExplanation] = useState('');
   const [testCases, setTestCases] = useState<TestCaseForm[]>([{ input: '', expected_output: '' }]);
+
+  useEffect(() => {
+    Promise.all([getProblem(Number(id)), getCategories()])
+      .then(([problem, cats]) => {
+        setCategories(cats);
+        setTitle(problem.title);
+        setDifficulty(problem.difficulty);
+        setCategoryId(problem.category_id);
+        setTags(problem.tags || []);
+        setDescription(problem.description || '');
+        setExamples(problem.examples || []);
+        setConstraints(problem.constraints || '');
+        setSolution(problem.solution || '');
+        setSolutionExplanation(problem.solution_explanation || '');
+        // Parse test_cases from raw JSON string on ProblemDetail
+        try {
+          const tc = (problem as unknown as { test_cases: string }).test_cases;
+          const parsed = JSON.parse(tc) as Array<{ input: unknown; expected_output: unknown }>;
+          setTestCases(parsed.map(t => ({
+            input: JSON.stringify(t.input),
+            expected_output: JSON.stringify(t.expected_output),
+          })));
+        } catch {
+          setTestCases([{ input: '', expected_output: '' }]);
+        }
+        setPageLoading(false);
+      })
+      .catch(() => {
+        setPageError('Failed to load problem.');
+        setPageLoading(false);
+      });
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +176,6 @@ export default function AddProblemPage() {
       return;
     }
 
-    // Parse test cases from JSON strings
     let parsedTestCases: Array<{ input: unknown; expected_output: unknown }>;
     try {
       parsedTestCases = testCases.map(tc => ({
@@ -161,7 +189,7 @@ export default function AddProblemPage() {
 
     setSubmitting(true);
     try {
-      const result = await createProblem({
+      await updateProblem(Number(id), {
         title: title.trim(),
         difficulty,
         category_id: categoryId as number,
@@ -171,21 +199,31 @@ export default function AddProblemPage() {
         constraints: constraints.trim(),
         solution: solution.trim(),
         solution_explanation: solutionExplanation.trim(),
-        test_cases: parsedTestCases as Array<{ input: unknown[]; expected_output: unknown }>,
+        test_cases: parsedTestCases,
       });
-      navigate(`/problems/${result.id}`);
+      navigate(`/problems/${id}`);
     } catch {
-      setFormError('Failed to create problem. Please check all fields and try again.');
+      setFormError('Failed to update problem. Please check all fields and try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (pageLoading) return (
+    <div className="flex items-center justify-center h-64" style={{ color: 'var(--color-text-muted)' }}>Loading…</div>
+  );
+  if (pageError) return (
+    <div className="p-8">
+      <div className="text-sm mb-4" style={{ color: '#8B2A1A' }}>{pageError}</div>
+      <Link to="/" className="text-sm underline" style={{ color: 'var(--color-text-secondary)' }}>← Back to problems</Link>
+    </div>
+  );
+
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-center gap-4 mb-8">
-        <Link to="/" className="text-sm hover:underline" style={{ color: 'var(--color-text-muted)' }}>← Back</Link>
-        <h1 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>Add New Problem</h1>
+        <Link to={`/problems/${id}`} className="text-sm hover:underline" style={{ color: 'var(--color-text-muted)' }}>← Back</Link>
+        <h1 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>Edit Problem</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-0">
@@ -215,14 +253,7 @@ export default function AddProblemPage() {
               >
                 <option value="">Select…</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                <option disabled>─────────────</option>
-                <option value="__new__">+ Manage Categories</option>
               </select>
-              {categoryId === '__new__' as unknown as number && (
-                <p className="text-xs mt-1">
-                  <Link to="/categories" style={{ color: 'var(--color-accent-hover)' }}>Go to Categories page →</Link>
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -248,7 +279,7 @@ export default function AddProblemPage() {
 
         {/* Examples */}
         <div style={SECTION_STYLE}>
-          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Examples * <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(at least 1)</span></label>
+          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Examples <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(optional)</span></label>
           <ExampleFields examples={examples} onChange={setExamples} />
         </div>
 
@@ -293,7 +324,7 @@ export default function AddProblemPage() {
 
         {/* Test Cases */}
         <div style={{ ...SECTION_STYLE, borderBottom: 'none' }}>
-          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Test Cases * <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(at least 1, values as JSON)</span></label>
+          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Test Cases * <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(values as JSON)</span></label>
           <TestCaseFields cases={testCases} onChange={setTestCases} />
         </div>
 
@@ -311,9 +342,9 @@ export default function AddProblemPage() {
             disabled={submitting}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5"
           >
-            {submitting ? 'Creating…' : 'Create Problem'}
+            {submitting ? 'Saving…' : 'Save Changes'}
           </button>
-          <Link to="/" className="btn-secondary px-6 py-2.5 inline-flex items-center">Cancel</Link>
+          <Link to={`/problems/${id}`} className="btn-secondary px-6 py-2.5 inline-flex items-center">Cancel</Link>
         </div>
       </form>
     </div>
