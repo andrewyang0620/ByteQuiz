@@ -1,5 +1,5 @@
 {
-  "name": "quizzing-tech-server",
+  "name": "bytequiz-server",
   "version": "1.0.0",
   "private": true,
   "main": "dist/index.js",
