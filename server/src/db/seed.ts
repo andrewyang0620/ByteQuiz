@@ -1,6 +1,27 @@
 ﻿import { DatabaseSync } from 'node:sqlite';
 
-interface Problem {
+const DEFAULT_CATEGORIES = [
+  { name: 'Array',              color: '#A8C4A0' },
+  { name: 'String',             color: '#90B0C4' },
+  { name: 'LinkedList',         color: '#C4B48A' },
+  { name: 'Tree',               color: '#90A870' },
+  { name: 'Graph',              color: '#90A870' },
+  { name: 'DynamicProgramming', color: '#B0A0C4' },
+  { name: 'Stack',              color: '#A0A098' },
+  { name: 'Queue',              color: '#A0A098' },
+  { name: 'HashTable',          color: '#90B0C4' },
+  { name: 'BinarySearch',       color: '#C4BC90' },
+  { name: 'Sorting',            color: '#C4BC90' },
+  { name: 'Math',               color: '#C4A090' },
+  { name: 'SQL',                color: '#C4B48A' },
+  { name: '系统设计',            color: '#C4A090' },
+  { name: '八股文',              color: '#B0A0C4' },
+  { name: '操作系统',            color: '#A8C4A0' },
+  { name: '网络',                color: '#90B0C4' },
+  { name: '数据库原理',           color: '#C4BC90' },
+];
+
+interface ProblemData {
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   category: string;
@@ -13,7 +34,7 @@ interface Problem {
   test_cases: string;
 }
 
-const problems: Problem[] = [
+const problems: ProblemData[] = [
   {
     title: 'Two Sum',
     difficulty: 'Easy',
@@ -245,20 +266,45 @@ Build the tree from the array representation, then use a queue. Each iteration, 
 ];
 
 export function seedDb(db: DatabaseSync): void {
+  // 1. Seed default categories (idempotent)
+  const insertCat = db.prepare(
+    'INSERT OR IGNORE INTO categories (name, color, is_default) VALUES (?, ?, 1)'
+  );
+  db.exec('BEGIN');
+  try {
+    for (const cat of DEFAULT_CATEGORIES) {
+      insertCat.run(cat.name, cat.color);
+    }
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  }
+
+  // 2. Seed problems only if table is empty
   const row = db.prepare('SELECT COUNT(*) as c FROM problems').get() as { c: number };
   if (row.c > 0) return;
 
+  const cats = db.prepare('SELECT id, name FROM categories').all() as Array<{ id: number; name: string }>;
+  const catMap = new Map(cats.map(c => [c.name, c.id]));
+
   const insert = db.prepare(`
     INSERT INTO problems
-      (title, difficulty, category, tags, description, examples, constraints, solution, solution_explanation, test_cases)
+      (title, difficulty, category_id, tags, description, examples, constraints, solution, solution_explanation, test_cases)
     VALUES
-      (@title, @difficulty, @category, @tags, @description, @examples, @constraints, @solution, @solution_explanation, @test_cases)
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   db.exec('BEGIN');
   try {
     for (const p of problems) {
-      insert.run(p as unknown as Record<string, import('node:sqlite').SQLInputValue>);
+      const categoryId = catMap.get(p.category);
+      if (!categoryId) throw new Error(`Unknown category during seed: ${p.category}`);
+      insert.run(
+        p.title, p.difficulty, categoryId, p.tags,
+        p.description, p.examples, p.constraints,
+        p.solution, p.solution_explanation, p.test_cases
+      );
     }
     db.exec('COMMIT');
   } catch (e) {

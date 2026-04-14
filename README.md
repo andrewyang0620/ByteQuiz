@@ -1,78 +1,62 @@
-# Quizzing Tech — Local Coding Quiz App
+# ByteQuiz
 
-A full-stack coding practice platform inspired by LeetCode. Practice algorithm problems, view solutions, and track submission history — all running locally.
+A self-hosted coding quiz app for practicing interview problems - algorithms,
+SQL, system design, and more. Built with React, Express, and SQLite.
 
----
+## Features
 
-## Quick Start
-
-```bash
-# 1. Install all dependencies
-npm run install:all
-
-# 2. Start dev servers (frontend + backend simultaneously)
-npm run dev
-```
-
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
-
----
+- Browse and filter problems by difficulty, category, and tags
+- Write and run code in the browser with Monaco Editor
+- View solutions and explanations without submitting
+- Add your own problems with full Markdown support
+- Create custom categories (SQL, system design, etc.)
+- Zero external dependencies - runs fully on your machine
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18 + Vite + TypeScript + Tailwind CSS |
-| Code Editor | Monaco Editor (VS Code engine) |
-| Backend | Node.js + Express + TypeScript |
-| Database | SQLite via node:sqlite (built-in Node.js 22+) |
-| Code Execution | Node.js `vm` module (sandboxed) |
+| Layer    | Technology                               |
+|----------|------------------------------------------|
+| Frontend | React + Vite + TypeScript + Tailwind CSS |
+| Backend  | Node.js + Express + TypeScript           |
+| Database | SQLite (node:sqlite built-in)            |
+| Editor   | Monaco Editor                            |
 
----
+## Getting Started
+
+### Prerequisites
+- Node.js >= 22.5
+
+### Install & Run
+```bash
+git clone https://github.com/andrewyang0620/ByteQuiz.git
+cd ByteQuiz
+npm run install:all
+npm run dev
+```
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001
 
 ## Project Structure
 
 ```
-├── client/          # React frontend
-│   └── src/
-│       ├── components/
-│       ├── pages/
-│       ├── hooks/
-│       └── api/
-├── server/          # Express backend
-│   └── src/
-│       ├── routes/
-│       ├── db/
-│       └── executor/
-└── package.json     # Root monorepo scripts
+bytequiz/
+|-- client/          # React frontend
+|-- server/          # Express backend
+|   -- data/        # SQLite database (gitignored)
+-- README.md
 ```
 
----
+## Adding Problems
 
-## Adding New Problems
+Click **"+ Add Problem"** in the nav bar to add a problem via the UI,
+or seed the database directly via server/src/db/seed.ts.
 
-Edit `server/src/db/seed.ts` and add a new entry in the `problems` array, then restart the server.
+## Managing Categories
 
----
+Go to **Categories** in the nav bar to add or remove custom categories.
+Built-in categories (Array, SQL, etc.) cannot be deleted.
 
-## API Endpoints
+## License
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/problems` | List problems (`?difficulty=&tag=&search=`) |
-| GET | `/api/problems/:id` | Problem detail |
-| POST | `/api/problems/:id/run` | Run against sample cases |
-| POST | `/api/problems/:id/submit` | Submit against all test cases |
-| GET | `/api/problems/:id/solution` | Get official solution (requires a submission) |
-| GET | `/api/submissions` | Submission history |
-| GET | `/api/submissions/:id` | Single submission detail |
-
----
-
-## Pushing to GitHub
-
-```bash
-git remote add origin https://github.com/YOUR_USERNAME/quizzing-tech.git
-git push -u origin main
-```
+MIT

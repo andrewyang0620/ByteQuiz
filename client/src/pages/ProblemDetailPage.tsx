@@ -150,7 +150,12 @@ export default function ProblemDetailPage() {
             <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>#{problem.id}</span>
             <h1 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>{problem.title}</h1>
             <DifficultyBadge d={problem.difficulty} />
-            <span className="badge-category">{problem.category}</span>
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded"
+              style={{ background: problem.category_color, color: 'var(--color-text-primary)' }}
+            >
+              {problem.category}
+            </span>
           </div>
           <div className="flex flex-wrap gap-1 mt-2">
             {problem.tags.map(t => (

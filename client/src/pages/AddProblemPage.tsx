@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createProblem, CATEGORIES, Example } from '../api';
+import { createProblem, getCategories, Category, Example } from '../api';
 
 interface TestCaseForm { input: string; expected_output: string; }
 
@@ -118,9 +118,14 @@ export default function AddProblemPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
+  const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState('');
-  const [category, setCategory] = useState('');
+  const [categoryId, setCategoryId] = useState<number | ''>('');  
+
+  useEffect(() => {
+    getCategories().then(setCategories).catch(() => {});
+  }, []);
   const [tags, setTags] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [examples, setExamples] = useState<Example[]>([{ input: '', output: '' }]);
@@ -133,7 +138,7 @@ export default function AddProblemPage() {
     e.preventDefault();
     setFormError('');
 
-    if (!title.trim() || !difficulty || !category || !description.trim()) {
+    if (!title.trim() || !difficulty || !categoryId || !description.trim()) {
       setFormError('Please fill in all required fields (Title, Difficulty, Category, Description).');
       return;
     }
@@ -163,7 +168,7 @@ export default function AddProblemPage() {
       const result = await createProblem({
         title: title.trim(),
         difficulty,
-        category,
+        category_id: categoryId as number,
         tags,
         description: description.trim(),
         examples,
@@ -206,10 +211,22 @@ export default function AddProblemPage() {
             </div>
             <div>
               <label style={LABEL_STYLE}>Category *</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className="input-base" style={FIELD_STYLE}>
+              <select
+                value={categoryId}
+                onChange={e => setCategoryId(e.target.value ? Number(e.target.value) : '')}
+                className="input-base"
+                style={FIELD_STYLE}
+              >
                 <option value="">Select…</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option disabled>─────────────</option>
+                <option value="__new__">+ Manage Categories</option>
               </select>
+              {categoryId === '__new__' as unknown as number && (
+                <p className="text-xs mt-1">
+                  <Link to="/categories" style={{ color: 'var(--color-accent-hover)' }}>Go to Categories page →</Link>
+                </p>
+              )}
             </div>
           </div>
         </div>

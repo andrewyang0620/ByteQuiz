@@ -2,11 +2,21 @@ import axios from 'axios';
 
 const api = axios.create({ baseURL: '/api' });
 
+export interface Category {
+  id: number;
+  name: string;
+  color: string;
+  is_default: boolean;
+  problem_count: number;
+}
+
 export interface Problem {
   id: number;
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  category_id: number;
   category: string;
+  category_color: string;
   tags: string[];
 }
 
@@ -43,7 +53,7 @@ export interface ExecuteResult {
 export interface NewProblem {
   title: string;
   difficulty: string;
-  category: string;
+  category_id: number;
   tags: string[];
   description: string;
   examples: Example[];
@@ -53,10 +63,15 @@ export interface NewProblem {
   test_cases: Array<{ input: unknown[]; expected_output: unknown }>;
 }
 
-export const CATEGORIES = [
-  'Array','String','LinkedList','Tree','Graph',
-  'DynamicProgramming','Stack','Queue','HashTable','BinarySearch','Sorting','Math',
-];
+// Categories
+export const getCategories = () =>
+  api.get<Category[]>('/categories').then(r => r.data);
+
+export const createCategory = (data: { name: string; color: string }) =>
+  api.post<Category>('/categories', data).then(r => r.data);
+
+export const deleteCategory = (id: number) =>
+  api.delete(`/categories/${id}`);
 
 // Problems
 export const getProblems = (params?: { difficulty?: string; category?: string; tag?: string; search?: string }) =>
