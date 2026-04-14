@@ -1,0 +1,11 @@
+node_modules/
+client/node_modules/
+server/node_modules/
+server/data/quiz.db
+server/data/quiz.db-shm
+server/data/quiz.db-wal
+dist/
+client/dist/
+server/dist/
+.env
+*.log
