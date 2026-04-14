@@ -4,7 +4,7 @@
 
   <!-- <h1>ByteQuiz</h1> -->
   <p><strong>A self-hosted coding interview practice platform</strong></p>
-  <p>Practice algorithms, SQL, system design, and 八股文 — all in one place.</p>
+  <p>Practice algorithms, SQL, system design — all in one place.</p>
 </div>
 
 <div align="center">
@@ -31,7 +31,7 @@
 | | |
 |---|---|
 | ⚡ Monaco Editor | VS Code-grade editor in the browser |
-| 🗂 Custom Categories | Add SQL, 系统设计, 八股文, anything |
+| 🗂 Custom Categories | Add SQL, Data Structure, Interview Question, anything |
 | 👁 Instant Answers | View solutions without submitting |
 | ✏️ Full CRUD | Add, edit, delete problems via UI |
 | 🔍 Smart Filters | Filter by difficulty, category, tags |
