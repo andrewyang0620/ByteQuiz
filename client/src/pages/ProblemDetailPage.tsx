@@ -55,50 +55,6 @@ function ExamplesBlock({ examples }: { examples: Example[] }) {
   );
 }
 
-function SolutionPanel({ solution, explanation }: { solution?: string; explanation?: string }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="mt-6 rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors"
-        style={{
-          background: open ? 'var(--color-accent)' : 'var(--color-surface)',
-          color: 'var(--color-text-primary)',
-        }}
-      >
-        <span>View Answer</span>
-        <span className="text-lg leading-none">{open ? '▲' : '▼'}</span>
-      </button>
-
-      {open && (
-        <div className="px-4 py-4" style={{ background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)' }}>
-          {solution && (
-            <>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-text-muted)' }}>Solution Code</p>
-              <pre className="rounded-lg p-4 text-sm font-mono overflow-x-auto" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}>
-                {solution}
-              </pre>
-            </>
-          )}
-          {explanation && (
-            <div className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-text-muted)' }}>Explanation</p>
-              <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose-content">
-                {explanation}
-              </ReactMarkdown>
-            </div>
-          )}
-          {!solution && !explanation && (
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>No solution provided for this problem.</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function ProblemDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -114,6 +70,7 @@ export default function ProblemDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [practiceCount, setPracticeCount] = useState(0);
   const [incrementing, setIncrementing] = useState(false);
+  const [rightTab, setRightTab] = useState<'editor' | 'answer'>('editor');
 
   useEffect(() => {
     setLoading(true);
@@ -259,51 +216,105 @@ export default function ProblemDetailPage() {
               </pre>
             </>
           )}
-
-          <SolutionPanel solution={problem.solution} explanation={problem.solution_explanation} />
         </div>
       </div>
 
       {/* Right panel */}
       <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
-        {/* Toolbar */}
+        {/* Tab bar + toolbar */}
         <div
           className="flex items-center justify-between px-4 py-2"
           style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}
         >
-          <select
-            value={language}
-            onChange={e => handleLanguageChange(e.target.value)}
-            className="input-base w-36"
-            style={{ padding: '4px 10px' }}
-          >
-            <option value="javascript">JavaScript</option>
-            <option value="python">Python</option>
-            <option value="java">Java</option>
-            <option value="sql">SQL</option>
-            <option value="text">Text</option>
-          </select>
-
-          {language !== 'text' && (
+          {/* Tabs */}
+          <div className="flex rounded-lg overflow-hidden text-xs font-medium" style={{ border: '1px solid var(--color-border)' }}>
             <button
-              onClick={handleRun}
-              disabled={running}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setRightTab('editor')}
+              className="px-4 py-1.5 transition-colors"
+              style={{
+                background: rightTab === 'editor' ? 'var(--color-accent)' : 'transparent',
+                color: rightTab === 'editor' ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+              }}
             >
-              {running ? 'Running…' : '▶ Run'}
+              Editor
             </button>
+            <button
+              onClick={() => setRightTab('answer')}
+              className="px-4 py-1.5 transition-colors"
+              style={{
+                background: rightTab === 'answer' ? 'var(--color-accent)' : 'transparent',
+                color: rightTab === 'answer' ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                borderLeft: '1px solid var(--color-border)',
+              }}
+            >
+              Answer
+            </button>
+          </div>
+
+          {/* Editor controls (only visible in Editor tab) */}
+          {rightTab === 'editor' && (
+            <div className="flex items-center gap-3">
+              <select
+                value={language}
+                onChange={e => handleLanguageChange(e.target.value)}
+                className="input-base w-36"
+                style={{ padding: '4px 10px' }}
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="sql">SQL</option>
+                <option value="text">Text</option>
+              </select>
+              {language !== 'text' && (
+                <button
+                  onClick={handleRun}
+                  disabled={running}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {running ? 'Running…' : '▶ Run'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Editor */}
-        <div className="flex-1 overflow-hidden">
-          <CodeEditor language={language} value={code} onChange={v => setCode(v ?? '')} />
-        </div>
+        {/* Editor tab content */}
+        {rightTab === 'editor' && (
+          <>
+            <div className="flex-1 overflow-hidden">
+              <CodeEditor language={language} value={code} onChange={v => setCode(v ?? '')} />
+            </div>
+            {result && (
+              <div style={{ height: 220, borderTop: '1px solid var(--color-border)', overflow: 'auto' }}>
+                <ResultPanel result={result} />
+              </div>
+            )}
+          </>
+        )}
 
-        {/* Result panel */}
-        {result && (
-          <div style={{ height: 220, borderTop: '1px solid var(--color-border)', overflow: 'auto' }}>
-            <ResultPanel result={result} />
+        {/* Answer tab content */}
+        {rightTab === 'answer' && (
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            {problem.solution && (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-text-muted)' }}>Solution Code</p>
+                <pre className="rounded-lg p-4 text-sm font-mono overflow-x-auto mb-6" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}>
+                  {problem.solution}
+                </pre>
+              </>
+            )}
+            {problem.solution_explanation && (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-text-muted)' }}>Explanation</p>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose-content">
+                  {problem.solution_explanation}
+                </ReactMarkdown>
+              </>
+            )}
+            {!problem.solution && !problem.solution_explanation && (
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>No solution provided for this problem.</p>
+            )}
           </div>
         )}
       </div>
