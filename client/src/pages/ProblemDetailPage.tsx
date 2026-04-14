@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getProblem, runCode, deleteProblem, ProblemDetail, ExecuteResult, Example } from '../api';
+import { getProblem, runCode, deleteProblem, incrementPracticeCount, ProblemDetail, ExecuteResult, Example } from '../api';
 import CodeEditor from '../components/CodeEditor';
 import ResultPanel from '../components/ResultPanel';
 
@@ -112,12 +112,15 @@ export default function ProblemDetailPage() {
   const [result, setResult] = useState<ExecuteResult | null>(null);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [practiceCount, setPracticeCount] = useState(0);
+  const [incrementing, setIncrementing] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     getProblem(Number(id))
       .then(p => {
         setProblem(p);
+        setPracticeCount((p as ProblemDetail & { practice_count: number }).practice_count ?? 0);
         const lang = LANGUAGE_MAP[p.category] || 'javascript';
         setLanguage(lang);
         setCode(DEFAULT_CODE[lang] || '');
@@ -157,6 +160,17 @@ export default function ProblemDetailPage() {
     }
   };
 
+  const handlePractice = async () => {
+    if (incrementing) return;
+    setIncrementing(true);
+    try {
+      const res = await incrementPracticeCount(Number(id));
+      setPracticeCount(res.practice_count);
+    } finally {
+      setIncrementing(false);
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64" style={{ color: 'var(--color-text-muted)' }}>Loading…</div>
   );
@@ -178,7 +192,16 @@ export default function ProblemDetailPage() {
         <div className="px-5 py-4" style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
           <div className="flex items-center justify-between">
             <Link to="/" className="text-xs hover:underline" style={{ color: 'var(--color-text-muted)' }}>← Back</Link>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePractice}
+                disabled={incrementing}
+                className="text-xs px-3 py-1 rounded-lg transition-colors font-medium disabled:opacity-50"
+                style={{ background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}
+                title="Mark as practiced"
+              >
+                +1 {practiceCount > 0 && <span style={{ color: 'var(--color-text-muted)' }}>({practiceCount})</span>}
+              </button>
               <button
                 onClick={() => navigate(`/problems/${id}/edit`)}
                 className="text-xs px-3 py-1 rounded-lg transition-colors"

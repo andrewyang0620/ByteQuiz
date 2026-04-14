@@ -18,6 +18,7 @@ export interface Problem {
   category: string;
   category_color: string;
   tags: string[];
+  practice_count: number;
 }
 
 export interface Example {
@@ -88,6 +89,9 @@ export const updateProblem = (id: number, data: NewProblem) =>
 
 export const deleteProblem = (id: number) =>
   api.delete(`/problems/${id}`);
+
+export const incrementPracticeCount = (id: number) =>
+  api.post<{ practice_count: number }>(`/problems/${id}/practice`).then(r => r.data);
 
 export const runCode = (id: number, code: string, language: string) =>
   api.post<ExecuteResult>(`/problems/${id}/run`, { code, language }).then(r => r.data);

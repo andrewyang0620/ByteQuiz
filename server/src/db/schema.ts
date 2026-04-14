@@ -35,9 +35,17 @@ export function initDb(dbPath: string): DatabaseSync {
       solution             TEXT,
       solution_explanation TEXT,
       test_cases           TEXT NOT NULL DEFAULT '[]',
+      practice_count       INTEGER NOT NULL DEFAULT 0,
       created_at           DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Migration: add practice_count to existing databases
+  try {
+    db.exec('ALTER TABLE problems ADD COLUMN practice_count INTEGER NOT NULL DEFAULT 0');
+  } catch {
+    // Column already exists — ignore
+  }
 
   return db;
 }

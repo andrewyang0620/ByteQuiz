@@ -123,13 +123,24 @@ export default function ProblemListPage() {
                 >
                   <td className="px-4 py-3" style={{ color: 'var(--color-text-muted)' }}>{p.id}</td>
                   <td className="px-4 py-3">
-                    <Link
-                      to={`/problems/${p.id}`}
-                      className="font-medium hover:underline"
-                      style={{ color: 'var(--color-text-primary)' }}
-                    >
-                      {p.title}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/problems/${p.id}`}
+                        className="font-medium hover:underline"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        {p.title}
+                      </Link>
+                      {p.practice_count > 0 && (
+                        <span
+                          className="text-xs px-1.5 py-0.5 rounded font-medium"
+                          style={{ background: 'var(--color-accent)', color: 'var(--color-text-secondary)' }}
+                          title="Times practiced"
+                        >
+                          ×{p.practice_count}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span

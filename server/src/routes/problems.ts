@@ -18,7 +18,7 @@ router.get('/', (req: Request, res: Response) => {
            c.id   AS category_id,
            c.name AS category,
            c.color AS category_color,
-           p.tags
+           p.tags, p.practice_count
     FROM problems p
     JOIN categories c ON c.id = p.category_id
     WHERE 1=1`;
@@ -41,7 +41,7 @@ router.get('/', (req: Request, res: Response) => {
 
   let problems = db.prepare(query).all(...params) as Array<{
     id: number; title: string; difficulty: string;
-    category_id: number; category: string; category_color: string; tags: string;
+    category_id: number; category: string; category_color: string; tags: string; practice_count: number;
   }>;
 
   if (tag && typeof tag === 'string') {
@@ -63,7 +63,7 @@ router.get('/:id', (req: Request, res: Response) => {
            c.name AS category,
            c.color AS category_color,
            p.tags, p.description, p.examples, p.constraints,
-           p.solution, p.solution_explanation, p.test_cases
+           p.solution, p.solution_explanation, p.test_cases, p.practice_count
     FROM problems p
     JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
@@ -161,6 +161,17 @@ router.delete('/:id', (req: Request, res: Response) => {
   if (!existing) { res.status(404).json({ error: 'Problem not found' }); return; }
   db.prepare('DELETE FROM problems WHERE id = ?').run(req.params.id);
   res.status(204).end();
+});
+
+// POST /api/problems/:id/practice — increment practice count
+router.post('/:id/practice', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const existing = db.prepare('SELECT id FROM problems WHERE id = ?').get(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Problem not found' }); return; }
+  db.prepare('UPDATE problems SET practice_count = practice_count + 1 WHERE id = ?').run(req.params.id);
+  const row = db.prepare('SELECT practice_count FROM problems WHERE id = ?')
+    .get(req.params.id) as { practice_count: number };
+  res.json({ practice_count: row.practice_count });
 });
 
 // POST /api/problems/:id/run � run sample test cases
