@@ -1,4 +1,7 @@
 <div align="center">
+
+<img src="./docs/bytequiz_logo.svg" alt="ByteQuiz Logo" width="80" />
+
   <h1>⬡ ByteQuiz</h1>
   <p><strong>A self-hosted coding interview practice platform</strong></p>
   <p>Practice algorithms, SQL, system design, and 八股文 — all in one place.</p>
@@ -20,9 +23,6 @@
 ## Preview
 
 > 📸 _Screenshot coming soon — run locally to see it in action._
-
-<!-- Replace with actual screenshot -->
-<!-- ![ByteQuiz Screenshot](./docs/screenshot.png) -->
 
 ---
 
