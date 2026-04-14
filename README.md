@@ -22,7 +22,7 @@
 
 ## Preview
 
-> 📸 _Screenshot coming soon — run locally to see it in action._
+![ByteQuiz Screenshot](./docs/screenshot.png)
 
 ---
 
