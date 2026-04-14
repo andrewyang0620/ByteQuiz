@@ -59,7 +59,6 @@ router.delete('/:id', (req: Request, res: Response) => {
     .get(req.params.id) as { id: number; is_default: number } | undefined;
 
   if (!cat) { res.status(404).json({ error: 'Category not found.' }); return; }
-  if (cat.is_default) { res.status(403).json({ error: 'Built-in categories cannot be deleted.' }); return; }
 
   const { n } = db.prepare('SELECT COUNT(*) as n FROM problems WHERE category_id = ?')
     .get(req.params.id) as { n: number };

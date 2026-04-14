@@ -172,23 +172,13 @@ export default function CategoriesPage() {
                     }
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {cat.is_default ? (
-                      <span
-                        title="Built-in categories cannot be deleted"
-                        className="text-xs cursor-not-allowed select-none"
-                        style={{ color: 'var(--color-text-muted)', opacity: 0.35 }}
-                      >
-                        Delete
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleDeleteClick(cat)}
-                        className="text-xs hover:underline"
-                        style={{ color: '#7A200E' }}
-                      >
-                        Delete
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDeleteClick(cat)}
+                      className="text-xs hover:underline"
+                      style={{ color: '#7A200E' }}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
