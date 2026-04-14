@@ -4,13 +4,23 @@
 
 :root {
   --color-bg:              #FAF9F6;
-  --color-surface:         #F5F0E8;
-  --color-accent:          #D4E2C8;
-  --color-accent-hover:    #C3D4B5;
-  --color-border:          #E2DACA;
+  --color-surface:         #F0E9D8;
+  --color-accent:          #B8D4A0;
+  --color-accent-hover:    #A3C48A;
+  --color-border:          #D4C9B0;
   --color-text-primary:    #2C2C2A;
-  --color-text-secondary:  #6B6860;
-  --color-text-muted:      #9C9890;
+  --color-text-secondary:  #5C5A54;
+  --color-text-muted:      #8C8A82;
+
+  /* Category badge color presets */
+  --badge-sage:     #A8C4A0;
+  --badge-sand:     #C4B48A;
+  --badge-clay:     #C4A090;
+  --badge-sky:      #90B0C4;
+  --badge-lavender: #B0A0C4;
+  --badge-moss:     #90A870;
+  --badge-wheat:    #C4BC90;
+  --badge-stone:    #A0A098;
 }
 
 @layer base {
@@ -26,10 +36,10 @@
 }
 
 @layer components {
-  .badge-easy   { @apply text-xs font-semibold px-2 py-0.5 rounded; background: #DCF0D0; color: #3A6B2A; }
-  .badge-medium { @apply text-xs font-semibold px-2 py-0.5 rounded; background: #F5E8C8; color: #7A5A10; }
-  .badge-hard   { @apply text-xs font-semibold px-2 py-0.5 rounded; background: #F5D8D0; color: #8B2A1A; }
-  .badge-category { @apply text-xs font-medium px-2 py-0.5 rounded; background: var(--color-accent); color: var(--color-text-secondary); }
+  .badge-easy   { @apply text-xs font-semibold px-2 py-0.5 rounded; background: #C8E8A8; color: #2A5A1A; }
+  .badge-medium { @apply text-xs font-semibold px-2 py-0.5 rounded; background: #E8D880; color: #6A4A08; }
+  .badge-hard   { @apply text-xs font-semibold px-2 py-0.5 rounded; background: #E8B0A0; color: #7A200E; }
+  .badge-category { @apply text-xs font-medium px-2 py-0.5 rounded; background: var(--color-accent); color: var(--color-text-primary); }
 
   .btn-primary {
     background-color: var(--color-accent);

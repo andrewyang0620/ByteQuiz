@@ -2,12 +2,23 @@ import axios from 'axios';
 
 const api = axios.create({ baseURL: '/api' });
 
+export interface Category {
+  id: number;
+  name: string;
+  color: string;
+  is_default: boolean;
+  problem_count: number;
+}
+
 export interface Problem {
   id: number;
   title: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  category_id: number;
   category: string;
+  category_color: string;
   tags: string[];
+  practice_count: number;
 }
 
 export interface Example {
@@ -43,20 +54,25 @@ export interface ExecuteResult {
 export interface NewProblem {
   title: string;
   difficulty: string;
-  category: string;
+  category_id: number;
   tags: string[];
   description: string;
   examples: Example[];
   constraints?: string;
   solution?: string;
   solution_explanation?: string;
-  test_cases: Array<{ input: unknown[]; expected_output: unknown }>;
+  test_cases: Array<{ input: unknown; expected_output: unknown }>;
 }
 
-export const CATEGORIES = [
-  'Array','String','LinkedList','Tree','Graph',
-  'DynamicProgramming','Stack','Queue','HashTable','BinarySearch','Sorting','Math',
-];
+// Categories
+export const getCategories = () =>
+  api.get<Category[]>('/categories').then(r => r.data);
+
+export const createCategory = (data: { name: string; color: string }) =>
+  api.post<Category>('/categories', data).then(r => r.data);
+
+export const deleteCategory = (id: number, force = false) =>
+  api.delete(`/categories/${id}${force ? '?force=true' : ''}`);
 
 // Problems
 export const getProblems = (params?: { difficulty?: string; category?: string; tag?: string; search?: string }) =>
@@ -67,6 +83,15 @@ export const getProblem = (id: number) =>
 
 export const createProblem = (data: NewProblem) =>
   api.post<{ id: number }>('/problems', data).then(r => r.data);
+
+export const updateProblem = (id: number, data: NewProblem) =>
+  api.put<{ id: number }>(`/problems/${id}`, data).then(r => r.data);
+
+export const deleteProblem = (id: number) =>
+  api.delete(`/problems/${id}`);
+
+export const incrementPracticeCount = (id: number) =>
+  api.post<{ practice_count: number }>(`/problems/${id}/practice`).then(r => r.data);
 
 export const runCode = (id: number, code: string, language: string) =>
   api.post<ExecuteResult>(`/problems/${id}/run`, { code, language }).then(r => r.data);

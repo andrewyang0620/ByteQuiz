@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getProblems, Problem, CATEGORIES } from '../api';
+import { getProblems, getCategories, Problem, Category } from '../api';
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const cls = difficulty === 'Easy' ? 'badge-easy' : difficulty === 'Medium' ? 'badge-medium' : 'badge-hard';
@@ -9,11 +9,16 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
 
 export default function ProblemListPage() {
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [category, setCategory] = useState('');
+
+  useEffect(() => {
+    getCategories().then(setCategories).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -69,7 +74,7 @@ export default function ProblemListPage() {
           className="input-base w-48"
         >
           <option value="">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
         </select>
         {hasFilters && (
           <button
@@ -118,16 +123,32 @@ export default function ProblemListPage() {
                 >
                   <td className="px-4 py-3" style={{ color: 'var(--color-text-muted)' }}>{p.id}</td>
                   <td className="px-4 py-3">
-                    <Link
-                      to={`/problems/${p.id}`}
-                      className="font-medium hover:underline"
-                      style={{ color: 'var(--color-text-primary)' }}
-                    >
-                      {p.title}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/problems/${p.id}`}
+                        className="font-medium hover:underline"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        {p.title}
+                      </Link>
+                      {p.practice_count > 0 && (
+                        <span
+                          className="text-xs px-1.5 py-0.5 rounded font-medium"
+                          style={{ background: 'var(--color-accent)', color: 'var(--color-text-secondary)' }}
+                          title="Times practiced"
+                        >
+                          ×{p.practice_count}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="badge-category">{p.category}</span>
+                    <span
+                      className="text-xs font-medium px-2 py-0.5 rounded"
+                      style={{ background: p.category_color, color: 'var(--color-text-primary)' }}
+                    >
+                      {p.category}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">

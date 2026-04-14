@@ -2,9 +2,27 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import ProblemListPage from './pages/ProblemListPage';
 import ProblemDetailPage from './pages/ProblemDetailPage';
 import AddProblemPage from './pages/AddProblemPage';
+import EditProblemPage from './pages/EditProblemPage';
+import CategoriesPage from './pages/CategoriesPage';
 
 export default function App() {
   const location = useLocation();
+
+  const navLink = (to: string, label: string) => {
+    const active = location.pathname === to;
+    return (
+      <Link
+        to={to}
+        style={{
+          color: active ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+          fontWeight: active ? 600 : 400,
+          textDecoration: 'none',
+        }}
+      >
+        {label}
+      </Link>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--color-bg)' }}>
@@ -20,16 +38,8 @@ export default function App() {
           </span>
         </Link>
         <nav className="flex gap-4 text-sm">
-          <Link
-            to="/"
-            style={{
-              color: location.pathname === '/' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-              fontWeight: location.pathname === '/' ? 600 : 400,
-              textDecoration: 'none',
-            }}
-          >
-            Problems
-          </Link>
+          {navLink('/', 'Problems')}
+          {navLink('/categories', 'Categories')}
         </nav>
       </header>
 
@@ -38,7 +48,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<ProblemListPage />} />
           <Route path="/problems/new" element={<AddProblemPage />} />
+          <Route path="/problems/:id/edit" element={<EditProblemPage />} />
           <Route path="/problems/:id" element={<ProblemDetailPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
         </Routes>
       </main>
     </div>

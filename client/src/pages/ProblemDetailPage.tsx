@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getProblem, runCode, ProblemDetail, ExecuteResult, Example } from '../api';
+import { getProblem, runCode, deleteProblem, incrementPracticeCount, ProblemDetail, ExecuteResult, Example } from '../api';
 import CodeEditor from '../components/CodeEditor';
 import ResultPanel from '../components/ResultPanel';
 
@@ -19,6 +19,17 @@ const DEFAULT_CODE: Record<string, string> = {
         return null;
     }
 }`,
+  sql: `-- Write your SQL query here\nSELECT `,
+  text: ``,
+};
+
+// Auto-select language based on problem category
+const LANGUAGE_MAP: Record<string, string> = {
+  SQL: 'sql',
+  '八股文': 'text',
+  '系统设计': 'text',
+  '网络': 'text',
+  '操作系统': 'text',
 };
 
 function DifficultyBadge({ d }: { d: string }) {
@@ -90,6 +101,7 @@ function SolutionPanel({ solution, explanation }: { solution?: string; explanati
 
 export default function ProblemDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -98,11 +110,22 @@ export default function ProblemDetailPage() {
   const [code, setCode] = useState(DEFAULT_CODE.javascript);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<ExecuteResult | null>(null);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [practiceCount, setPracticeCount] = useState(0);
+  const [incrementing, setIncrementing] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     getProblem(Number(id))
-      .then(p => { setProblem(p); setLoading(false); })
+      .then(p => {
+        setProblem(p);
+        setPracticeCount((p as ProblemDetail & { practice_count: number }).practice_count ?? 0);
+        const lang = LANGUAGE_MAP[p.category] || 'javascript';
+        setLanguage(lang);
+        setCode(DEFAULT_CODE[lang] || '');
+        setLoading(false);
+      })
       .catch(() => { setError('Failed to load problem.'); setLoading(false); });
   }, [id]);
 
@@ -126,6 +149,28 @@ export default function ProblemDetailPage() {
     }
   }, [id, code, language, running]);
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteProblem(Number(id));
+      navigate('/');
+    } catch {
+      setDeleting(false);
+      setDeleteModal(false);
+    }
+  };
+
+  const handlePractice = async () => {
+    if (incrementing) return;
+    setIncrementing(true);
+    try {
+      const res = await incrementPracticeCount(Number(id));
+      setPracticeCount(res.practice_count);
+    } finally {
+      setIncrementing(false);
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64" style={{ color: 'var(--color-text-muted)' }}>Loading…</div>
   );
@@ -145,12 +190,44 @@ export default function ProblemDetailPage() {
       >
         {/* Header */}
         <div className="px-5 py-4" style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
-          <Link to="/" className="text-xs hover:underline" style={{ color: 'var(--color-text-muted)' }}>← Back</Link>
+          <div className="flex items-center justify-between">
+            <Link to="/" className="text-xs hover:underline" style={{ color: 'var(--color-text-muted)' }}>← Back</Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePractice}
+                disabled={incrementing}
+                className="text-xs px-3 py-1 rounded-lg transition-colors font-medium disabled:opacity-50"
+                style={{ background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}
+                title="Mark as practiced"
+              >
+                +1 {practiceCount > 0 && <span style={{ color: 'var(--color-text-muted)' }}>({practiceCount})</span>}
+              </button>
+              <button
+                onClick={() => navigate(`/problems/${id}/edit`)}
+                className="text-xs px-3 py-1 rounded-lg transition-colors"
+                style={{ background: 'var(--color-accent)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => setDeleteModal(true)}
+                className="text-xs px-3 py-1 rounded-lg transition-colors"
+                style={{ background: '#F8E0DC', color: '#7A200E', border: '1px solid #E8B0A0' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
           <div className="flex items-center gap-3 mt-2">
             <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>#{problem.id}</span>
             <h1 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>{problem.title}</h1>
             <DifficultyBadge d={problem.difficulty} />
-            <span className="badge-category">{problem.category}</span>
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded"
+              style={{ background: problem.category_color, color: 'var(--color-text-primary)' }}
+            >
+              {problem.category}
+            </span>
           </div>
           <div className="flex flex-wrap gap-1 mt-2">
             {problem.tags.map(t => (
@@ -203,15 +280,19 @@ export default function ProblemDetailPage() {
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="java">Java</option>
+            <option value="sql">SQL</option>
+            <option value="text">Text</option>
           </select>
 
-          <button
-            onClick={handleRun}
-            disabled={running}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {running ? 'Running…' : '▶ Run'}
-          </button>
+          {language !== 'text' && (
+            <button
+              onClick={handleRun}
+              disabled={running}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {running ? 'Running…' : '▶ Run'}
+            </button>
+          )}
         </div>
 
         {/* Editor */}
@@ -226,6 +307,45 @@ export default function ProblemDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirm modal */}
+      {deleteModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: 'rgba(44,44,42,0.4)' }}
+          onClick={() => !deleting && setDeleteModal(false)}
+        >
+          <div
+            className="rounded-xl p-6 max-w-sm w-full mx-4 shadow-lg"
+            style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
+              Delete "{problem.title}"?
+            </h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteModal(false)}
+                disabled={deleting}
+                className="btn-secondary px-4 py-2 text-xs disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-xs font-medium px-4 py-2 rounded-lg disabled:opacity-50"
+                style={{ background: '#E8B0A0', color: '#7A200E', border: '1px solid #C4806C' }}
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
