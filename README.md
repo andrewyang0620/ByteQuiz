@@ -31,11 +31,12 @@
 | | |
 |---|---|
 | ⚡ Monaco Editor | VS Code-grade editor in the browser |
-| 🗂 Custom Categories | Add SQL, Data Structure, Interview Question, anything |
+| 🗂 Custom Categories | Add, edit, and delete categories with custom colors |
 | 👁 Instant Answers | View solutions without submitting |
 | ✏️ Full CRUD | Add, edit, delete problems via UI |
 | 🔍 Smart Filters | Filter by difficulty, category, tags |
 | 💾 Local First | No cloud, no account, runs on SQLite |
+| 🤖 AI Grading | Submit code to get instant feedback from GPT-4.1 — logic errors, syntax issues, and fix suggestions |
 
 ---
 
@@ -120,9 +121,30 @@ bytequiz/
 
 - **Add problems** — click `+ Add Problem`, fill in title, category, description, and optional examples / test cases
 - **Practice** — open any problem, write code in the Editor tab, hit `▶ Run` to test against saved test cases
+- **AI Grading** — click `▶ Submit` to send your code to GPT-4.1 for instant feedback: logic errors with line-by-line fixes and format/syntax issues
 - **View answer** — switch to the **Answer** tab in the right panel
 - **Track progress** — hit `+1` on any problem to track how many times you've practiced it
-- **Manage categories** — go to **Categories** to add custom categories or delete built-in ones
+- **Manage categories** — go to **Categories** to add, edit (name + color), or delete categories
+
+---
+
+## AI Grading Setup
+
+ByteQuiz uses OpenAI GPT-4.1 to review your code submissions.
+
+1. Add your API key to `server/.env`:
+   ```
+   OPENAI_API_KEY=sk-...
+   ```
+2. Rebuild and restart the server:
+   ```bash
+   cd server && npm run build && pm2 restart bytequiz-server
+   ```
+3. Open any problem, write code, and click **▶ Submit** — the **AI Grading** tab will show feedback structured as:
+   - 🔴 **Logic Errors** — line-level issues with suggested fixes
+   - 🟡 **Format / Syntax Errors** — typos, naming violations, syntax mistakes
+
+> The output language defaults to English. To switch to Chinese, change `OUTPUT_LANGUAGE` in `server/src/routes/grade.ts` line 5 to `'zh'`, then rebuild.
 
 ---
 

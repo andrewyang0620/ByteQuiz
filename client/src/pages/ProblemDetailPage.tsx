@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getProblem, getProblems, runCode, deleteProblem, incrementPracticeCount, ProblemDetail, ExecuteResult, Example } from '../api';
+import { getProblem, getProblems, runCode, deleteProblem, incrementPracticeCount, gradeCode, ProblemDetail, ExecuteResult, Example } from '../api';
 import CodeEditor from '../components/CodeEditor';
 import ResultPanel from '../components/ResultPanel';
 
@@ -70,8 +70,11 @@ export default function ProblemDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [practiceCount, setPracticeCount] = useState(0);
   const [incrementing, setIncrementing] = useState(false);
-  const [rightTab, setRightTab] = useState<'editor' | 'answer'>('editor');
+  const [rightTab, setRightTab] = useState<'editor' | 'answer' | 'ai'>('editor');
   const [displayNumber, setDisplayNumber] = useState<number | null>(null);
+  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   useEffect(() => {
     getProblems({}).then(list => {
@@ -113,6 +116,31 @@ export default function ProblemDetailPage() {
       setRunning(false);
     }
   }, [id, code, language, running]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!problem || aiLoading) return;
+    // AI grading only
+    setResult(null);
+    setAiLoading(true);
+    setAiError('');
+    setRightTab('ai');
+    try {
+      const res = await gradeCode({
+        problemTitle: problem.title,
+        description: problem.description,
+        examples: problem.examples ?? [],
+        solution: problem.solution ?? null,
+        userCode: code,
+        language,
+      });
+      setAiFeedback(res.feedback);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setAiError(msg || 'Failed to get AI feedback.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [problem, aiLoading, language, code]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -257,6 +285,17 @@ export default function ProblemDetailPage() {
             >
               Answer
             </button>
+            <button
+              onClick={() => setRightTab('ai')}
+              className="px-4 py-1.5 transition-colors"
+              style={{
+                background: rightTab === 'ai' ? 'var(--color-accent)' : 'transparent',
+                color: rightTab === 'ai' ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                borderLeft: '1px solid var(--color-border)',
+              }}
+            >
+              AI Grading
+            </button>
           </div>
 
           {/* Editor controls (only visible in Editor tab) */}
@@ -276,11 +315,20 @@ export default function ProblemDetailPage() {
               </select>
               {language !== 'text' && (
                 <button
-                  onClick={handleRun}
-                  disabled={running}
+                  onClick={handleSubmit}
+                  disabled={running || aiLoading}
                   className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {running ? 'Running…' : '▶ Run'}
+                  {running ? 'Running…' : aiLoading ? 'Grading…' : '▶ Submit'}
+                </button>
+              )}
+              {language === 'text' && (
+                <button
+                  onClick={handleSubmit}
+                  disabled={aiLoading}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {aiLoading ? 'Grading…' : '▶ Submit'}
                 </button>
               )}
             </div>
@@ -322,6 +370,30 @@ export default function ProblemDetailPage() {
             )}
             {!problem.solution && !problem.solution_explanation && (
               <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>No solution provided for this problem.</p>
+            )}
+          </div>
+        )}
+        {/* AI Grading tab content */}
+        {rightTab === 'ai' && (
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            {aiLoading && (
+              <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--color-text-muted)' }}>
+                <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-accent-hover)', borderTopColor: 'transparent' }} />
+                <span className="text-sm">AI is reviewing your code…</span>
+              </div>
+            )}
+            {!aiLoading && aiError && (
+              <div className="rounded-lg p-4 text-sm" style={{ background: '#F8E0DC', color: '#7A200E', border: '1px solid #E8B0A0' }}>
+                {aiError}
+              </div>
+            )}
+            {!aiLoading && !aiError && aiFeedback && (
+              <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose-content">
+                {aiFeedback}
+              </ReactMarkdown>
+            )}
+            {!aiLoading && !aiError && !aiFeedback && (
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Submit your code to get AI feedback.</p>
             )}
           </div>
         )}
