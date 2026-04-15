@@ -54,7 +54,7 @@ function ExampleFields({ examples, onChange }: { examples: Example[]; onChange: 
         <div key={i} className="rounded-lg p-4 relative" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>Example {i + 1}</span>
-            {examples.length > 1 && (
+            {examples.length > 0 && (
               <button onClick={() => remove(i)} className="text-xs hover:opacity-70" style={{ color: '#8B2A1A' }}>Remove</button>
             )}
           </div>
@@ -128,7 +128,7 @@ export default function AddProblemPage() {
   }, []);
   const [tags, setTags] = useState<string[]>([]);
   const [description, setDescription] = useState('');
-  const [examples, setExamples] = useState<Example[]>([{ input: '', output: '' }]);
+  const [examples, setExamples] = useState<Example[]>([]);
   const [constraints, setConstraints] = useState('');
   const [solution, setSolution] = useState('');
   const [solutionExplanation, setSolutionExplanation] = useState('');
@@ -140,6 +140,10 @@ export default function AddProblemPage() {
 
     if (!title.trim() || !difficulty || !categoryId || !description.trim()) {
       setFormError('Please fill in all required fields (Title, Difficulty, Category, Description).');
+      return;
+    }
+    if (examples.length > 0 && examples.some(ex => !ex.input.trim() || !ex.output.trim())) {
+      setFormError('All examples must have Input and Output filled in.');
       return;
     }
     if (testCases.length > 0 && testCases.some(tc => !tc.input.trim() || !tc.expected_output.trim())) {
@@ -249,7 +253,7 @@ export default function AddProblemPage() {
 
         {/* Examples */}
         <div style={SECTION_STYLE}>
-          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Examples * <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(at least 1)</span></label>
+          <label style={{ ...LABEL_STYLE, marginBottom: 12 }}>Examples <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(optional)</span></label>
           <ExampleFields examples={examples} onChange={setExamples} />
         </div>
 
