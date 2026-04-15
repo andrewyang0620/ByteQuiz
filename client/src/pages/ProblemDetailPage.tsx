@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getProblem, runCode, deleteProblem, incrementPracticeCount, ProblemDetail, ExecuteResult, Example } from '../api';
+import { getProblem, getProblems, runCode, deleteProblem, incrementPracticeCount, ProblemDetail, ExecuteResult, Example } from '../api';
 import CodeEditor from '../components/CodeEditor';
 import ResultPanel from '../components/ResultPanel';
 
@@ -71,6 +71,14 @@ export default function ProblemDetailPage() {
   const [practiceCount, setPracticeCount] = useState(0);
   const [incrementing, setIncrementing] = useState(false);
   const [rightTab, setRightTab] = useState<'editor' | 'answer'>('editor');
+  const [displayNumber, setDisplayNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    getProblems({}).then(list => {
+      const idx = list.findIndex(p => p.id === Number(id));
+      if (idx !== -1) setDisplayNumber(idx + 1);
+    }).catch(() => {});
+  }, [id]);
 
   useEffect(() => {
     setLoading(true);
@@ -176,7 +184,7 @@ export default function ProblemDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 mt-2">
-            <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>#{problem.id}</span>
+            <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>#{displayNumber ?? problem.id}</span>
             <h1 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>{problem.title}</h1>
             <DifficultyBadge d={problem.difficulty} />
             <span
