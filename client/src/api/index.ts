@@ -6,7 +6,6 @@ export interface Category {
   id: number;
   name: string;
   color: string;
-  is_default: boolean;
   problem_count: number;
 }
 
@@ -70,6 +69,9 @@ export const getCategories = () =>
 
 export const createCategory = (data: { name: string; color: string }) =>
   api.post<Category>('/categories', data).then(r => r.data);
+
+export const updateCategory = (id: number, data: { name: string; color: string }) =>
+  api.put<Category>(`/categories/${id}`, data).then(r => r.data);
 
 export const deleteCategory = (id: number, force = false) =>
   api.delete(`/categories/${id}${force ? '?force=true' : ''}`);

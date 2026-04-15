@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getCategories, createCategory, deleteCategory, Category } from '../api';
+import { getCategories, createCategory, updateCategory, deleteCategory, Category } from '../api';
 
 const PRESET_COLORS = [
   { label: 'Sage',     value: '#A8C4A0' },
@@ -13,18 +13,47 @@ const PRESET_COLORS = [
   { label: 'Stone',    value: '#A0A098' },
 ];
 
+function ColorPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex gap-2">
+      {PRESET_COLORS.map(c => (
+        <button
+          key={c.value}
+          type="button"
+          onClick={() => onChange(c.value)}
+          title={c.label}
+          className="w-6 h-6 rounded transition-transform"
+          style={{
+            background: c.value,
+            border: value === c.value ? '2px solid var(--color-text-primary)' : '2px solid transparent',
+            transform: value === c.value ? 'scale(1.2)' : 'scale(1)',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Add form
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(PRESET_COLORS[0].value);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
 
-  // null = closed, { cat, force } = open
-  const [modal, setModal] = useState<{ cat: Category; force: boolean } | null>(null);
+  // Edit modal
+  const [editModal, setEditModal] = useState<Category | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState(PRESET_COLORS[0].value);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  // Delete modal
+  const [deleteModal, setDeleteModal] = useState<{ cat: Category; force: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
@@ -55,27 +84,48 @@ export default function CategoriesPage() {
     }
   };
 
-  // Called when user clicks Delete on a custom category
-  const handleDeleteClick = (cat: Category) => {
-    setDeleteError('');
-    setModal({ cat, force: false });
+  const openEdit = (cat: Category) => {
+    setEditModal(cat);
+    setEditName(cat.name);
+    setEditColor(cat.color);
+    setEditError('');
   };
 
-  // Called when user confirms in the modal
+  const handleEditSave = async () => {
+    if (!editModal) return;
+    setEditError('');
+    if (!editName.trim()) { setEditError('Name is required.'); return; }
+    setSaving(true);
+    try {
+      await updateCategory(editModal.id, { name: editName.trim(), color: editColor });
+      setEditModal(null);
+      load();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setEditError(msg || 'Failed to update category.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteClick = (cat: Category) => {
+    setDeleteError('');
+    setDeleteModal({ cat, force: false });
+  };
+
   const handleDeleteConfirm = async (force: boolean) => {
-    if (!modal) return;
+    if (!deleteModal) return;
     setDeleting(true);
     setDeleteError('');
     try {
-      await deleteCategory(modal.cat.id, force);
-      setModal(null);
+      await deleteCategory(deleteModal.cat.id, force);
+      setDeleteModal(null);
       load();
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number; data?: { error?: string; problem_count?: number } } })?.response?.status;
       const data = (err as { response?: { data?: { error?: string; problem_count?: number } } })?.response?.data;
       if (status === 409 && data?.problem_count) {
-        // Show force-delete confirmation
-        setModal({ cat: { ...modal.cat, problem_count: data.problem_count }, force: true });
+        setDeleteModal({ cat: { ...deleteModal.cat, problem_count: data.problem_count }, force: true });
         setDeleteError('');
       } else {
         setDeleteError(data?.error || 'Failed to delete category.');
@@ -103,28 +153,13 @@ export default function CategoriesPage() {
               <input
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
-                placeholder="e.g. 操作系统"
+                placeholder="e.g. SystemDesign"
                 className="input-base"
               />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-text-secondary)' }}>Color</label>
-              <div className="flex gap-2">
-                {PRESET_COLORS.map(c => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setNewColor(c.value)}
-                    title={c.label}
-                    className="w-6 h-6 rounded transition-transform"
-                    style={{
-                      background: c.value,
-                      border: newColor === c.value ? '2px solid var(--color-text-primary)' : '2px solid transparent',
-                      transform: newColor === c.value ? 'scale(1.2)' : 'scale(1)',
-                    }}
-                  />
-                ))}
-              </div>
+              <ColorPicker value={newColor} onChange={setNewColor} />
             </div>
             <button type="submit" disabled={adding} className="btn-primary disabled:opacity-50 whitespace-nowrap px-4 py-2">
               {adding ? 'Adding…' : '+ Add'}
@@ -146,8 +181,7 @@ export default function CategoriesPage() {
               <tr style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
                 <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--color-text-muted)' }}>Category</th>
                 <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--color-text-muted)' }}>Problems</th>
-                <th className="px-4 py-3 text-left font-medium" style={{ color: 'var(--color-text-muted)' }}>Type</th>
-                <th className="px-4 py-3 w-24" />
+                <th className="px-4 py-3 w-32" />
               </tr>
             </thead>
             <tbody>
@@ -165,20 +199,23 @@ export default function CategoriesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>{cat.problem_count}</td>
-                  <td className="px-4 py-3">
-                    {cat.is_default
-                      ? <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Built-in</span>
-                      : <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Custom</span>
-                    }
-                  </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleDeleteClick(cat)}
-                      className="text-xs hover:underline"
-                      style={{ color: '#7A200E' }}
-                    >
-                      Delete
-                    </button>
+                    <div className="flex gap-3 justify-end">
+                      <button
+                        onClick={() => openEdit(cat)}
+                        className="text-xs hover:underline"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(cat)}
+                        className="text-xs hover:underline"
+                        style={{ color: '#7A200E' }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -187,12 +224,68 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* Delete confirm modal */}
-      {modal && (
+      {/* Edit modal */}
+      {editModal && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{ background: 'rgba(44,44,42,0.4)' }}
-          onClick={() => !deleting && setModal(null)}
+          onClick={() => !saving && setEditModal(null)}
+        >
+          <div
+            className="rounded-xl p-6 max-w-sm w-full mx-4 shadow-lg"
+            style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              Edit Category
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-text-secondary)' }}>Name</label>
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="input-base"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--color-text-secondary)' }}>Color</label>
+                <ColorPicker value={editColor} onChange={setEditColor} />
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs px-2 py-0.5 rounded font-medium" style={{ background: editColor, color: 'var(--color-text-primary)' }}>
+                    {editName || 'Preview'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {editError && <p className="text-xs mt-3" style={{ color: '#7A200E' }}>{editError}</p>}
+            <div className="flex gap-3 justify-end mt-5">
+              <button
+                onClick={() => !saving && setEditModal(null)}
+                disabled={saving}
+                className="btn-secondary px-4 py-2 text-xs disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSave}
+                disabled={saving}
+                className="btn-primary px-4 py-2 text-xs disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm modal */}
+      {deleteModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: 'rgba(44,44,42,0.4)' }}
+          onClick={() => !deleting && setDeleteModal(null)}
         >
           <div
             className="rounded-xl p-6 max-w-sm w-full mx-4 shadow-lg"
@@ -200,12 +293,12 @@ export default function CategoriesPage() {
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
-              Delete "{modal.cat.name}"?
+              Delete "{deleteModal.cat.name}"?
             </h3>
 
-            {modal.force ? (
+            {deleteModal.force ? (
               <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-                This category has <strong>{modal.cat.problem_count}</strong> problem(s).
+                This category has <strong>{deleteModal.cat.problem_count}</strong> problem(s).
                 After deletion, those problems will be moved to <em>Uncategorized</em>.
                 <br /><br />Confirm delete?
               </p>
@@ -219,14 +312,14 @@ export default function CategoriesPage() {
 
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => !deleting && setModal(null)}
+                onClick={() => !deleting && setDeleteModal(null)}
                 disabled={deleting}
                 className="btn-secondary px-4 py-2 text-xs disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() => handleDeleteConfirm(modal.force)}
+                onClick={() => handleDeleteConfirm(deleteModal.force)}
                 disabled={deleting}
                 className="text-xs font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                 style={{ background: '#E8B0A0', color: '#7A200E', border: '1px solid #C4806C' }}

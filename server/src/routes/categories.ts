@@ -11,18 +11,17 @@ function getDb(req: Request): DatabaseSync {
 router.get('/', (req: Request, res: Response) => {
   const db = getDb(req);
   const categories = db.prepare(`
-    SELECT c.id, c.name, c.color, c.is_default,
+    SELECT c.id, c.name, c.color,
            COUNT(p.id) as problem_count
     FROM categories c
     LEFT JOIN problems p ON p.category_id = c.id
     GROUP BY c.id
-    ORDER BY c.is_default DESC, c.name ASC
+    ORDER BY c.name ASC
   `).all() as Array<{
-    id: number; name: string; color: string;
-    is_default: number; problem_count: number;
+    id: number; name: string; color: string; problem_count: number;
   }>;
 
-  res.json(categories.map(c => ({ ...c, is_default: c.is_default === 1 })));
+  res.json(categories);
 });
 
 // POST /api/categories — create new category
@@ -39,9 +38,9 @@ router.post('/', (req: Request, res: Response) => {
 
   try {
     const result = db.prepare(
-      'INSERT INTO categories (name, color, is_default) VALUES (?, ?, 0)'
+      'INSERT INTO categories (name, color) VALUES (?, ?)'
     ).run(name.trim(), finalColor);
-    res.status(201).json({ id: result.lastInsertRowid, name: name.trim(), color: finalColor, is_default: false });
+    res.status(201).json({ id: result.lastInsertRowid, name: name.trim(), color: finalColor });
   } catch (e: unknown) {
     if (e instanceof Error && e.message.includes('UNIQUE')) {
       res.status(409).json({ error: 'A category with this name already exists.' });
@@ -51,12 +50,45 @@ router.post('/', (req: Request, res: Response) => {
   }
 });
 
+// PUT /api/categories/:id — update name and/or color
+router.put('/:id', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const cat = db.prepare('SELECT id FROM categories WHERE id = ?')
+    .get(req.params.id) as { id: number } | undefined;
+
+  if (!cat) { res.status(404).json({ error: 'Category not found.' }); return; }
+
+  const { name, color } = req.body as { name?: string; color?: string };
+  if (!name || !name.trim()) { res.status(400).json({ error: 'Name is required.' }); return; }
+
+  const finalColor = (color && /^#[0-9A-Fa-f]{6}$/.test(color)) ? color : undefined;
+
+  try {
+    if (finalColor) {
+      db.prepare('UPDATE categories SET name = ?, color = ? WHERE id = ?')
+        .run(name.trim(), finalColor, req.params.id);
+    } else {
+      db.prepare('UPDATE categories SET name = ? WHERE id = ?')
+        .run(name.trim(), req.params.id);
+    }
+    const updated = db.prepare('SELECT id, name, color FROM categories WHERE id = ?')
+      .get(req.params.id) as { id: number; name: string; color: string };
+    res.json(updated);
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('UNIQUE')) {
+      res.status(409).json({ error: 'A category with this name already exists.' });
+    } else {
+      res.status(500).json({ error: 'Failed to update category.' });
+    }
+  }
+});
+
 // DELETE /api/categories/:id
 // Query param: ?force=true  → reassign problems to "Uncategorized" fallback then delete
 router.delete('/:id', (req: Request, res: Response) => {
   const db = getDb(req);
-  const cat = db.prepare('SELECT id, is_default FROM categories WHERE id = ?')
-    .get(req.params.id) as { id: number; is_default: number } | undefined;
+  const cat = db.prepare('SELECT id FROM categories WHERE id = ?')
+    .get(req.params.id) as { id: number } | undefined;
 
   if (!cat) { res.status(404).json({ error: 'Category not found.' }); return; }
 
