@@ -31,8 +31,11 @@ export default function App() {
         className="px-6 py-3 flex items-center gap-6 sticky top-0 z-50"
         style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}
       >
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-          <img src="/bytequiz_logo.svg" alt="ByteQuiz" height={28} style={{ display: 'block' }} />
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 700, letterSpacing: '-0.5px' }}>
+            <span style={{ color: 'var(--color-text-primary)' }}>Byte</span>
+            <span style={{ color: 'var(--color-accent-hover)' }}>Quiz</span>
+          </span>
         </Link>
         <nav className="flex gap-4 text-sm">
           {navLink('/', 'Problems')}
