@@ -14,11 +14,6 @@ const DEFAULT_CATEGORIES = [
   { name: 'Sorting',            color: '#C4BC90' },
   { name: 'Math',               color: '#C4A090' },
   { name: 'SQL',                color: '#C4B48A' },
-  { name: '系统设计',            color: '#C4A090' },
-  { name: '八股文',              color: '#B0A0C4' },
-  { name: '操作系统',            color: '#A8C4A0' },
-  { name: '网络',                color: '#90B0C4' },
-  { name: '数据库原理',           color: '#C4BC90' },
 ];
 
 interface ProblemData {
@@ -268,7 +263,7 @@ Build the tree from the array representation, then use a queue. Each iteration, 
 export function seedDb(db: DatabaseSync): void {
   // 1. Seed default categories (idempotent)
   const insertCat = db.prepare(
-    'INSERT OR IGNORE INTO categories (name, color, is_default) VALUES (?, ?, 1)'
+    'INSERT OR IGNORE INTO categories (name, color, is_default) VALUES (?, ?, 0)'
   );
   db.exec('BEGIN');
   try {
