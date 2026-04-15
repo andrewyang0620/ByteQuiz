@@ -98,3 +98,15 @@ export const incrementPracticeCount = (id: number) =>
 export const runCode = (id: number, code: string, language: string) =>
   api.post<ExecuteResult>(`/problems/${id}/run`, { code, language }).then(r => r.data);
 
+export interface GradePayload {
+  problemTitle: string;
+  description: string;
+  examples: Array<{ input: string; output: string; explanation?: string }>;
+  solution: string | null;
+  userCode: string;
+  language: string;
+}
+
+export const gradeCode = (payload: GradePayload) =>
+  api.post<{ feedback: string }>('/grade', payload).then(r => r.data);
+

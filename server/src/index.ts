@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -5,6 +6,7 @@ import { initDb } from './db/schema';
 import { seedDb } from './db/seed';
 import problemsRouter from './routes/problems';
 import categoriesRouter from './routes/categories';
+import gradeRouter from './routes/grade';
 
 const app = express();
 const PORT = process.env.PORT || 47291;
@@ -27,6 +29,7 @@ app.locals.db = db;
 // Routes
 app.use('/api/problems', problemsRouter);
 app.use('/api/categories', categoriesRouter);
+app.use('/api/grade', gradeRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
