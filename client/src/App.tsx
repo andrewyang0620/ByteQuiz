@@ -4,6 +4,7 @@ import ProblemDetailPage from './pages/ProblemDetailPage';
 import AddProblemPage from './pages/AddProblemPage';
 import EditProblemPage from './pages/EditProblemPage';
 import CategoriesPage from './pages/CategoriesPage';
+import AIProblemsPage from './pages/AIProblemsPage';
 
 export default function App() {
   const location = useLocation();
@@ -40,6 +41,7 @@ export default function App() {
         <nav className="flex gap-4 text-sm">
           {navLink('/', 'Problems')}
           {navLink('/categories', 'Categories')}
+          {navLink('/ai-problems', 'AI Problems')}
         </nav>
       </header>
 
@@ -51,6 +53,7 @@ export default function App() {
           <Route path="/problems/:id/edit" element={<EditProblemPage />} />
           <Route path="/problems/:id" element={<ProblemDetailPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/ai-problems" element={<AIProblemsPage />} />
         </Routes>
       </main>
     </div>

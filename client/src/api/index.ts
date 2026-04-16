@@ -110,3 +110,69 @@ export interface GradePayload {
 export const gradeCode = (payload: GradePayload) =>
   api.post<{ feedback: string }>('/grade', payload).then(r => r.data);
 
+// ─── AI Problems ────────────────────────────────────────────────────────────
+
+export interface AIInput {
+  id: number;
+  topics: string[];
+  languages: string[];
+  goal: 'job' | 'learning';
+  job_roles: string[] | null;
+  job_level: string | null;
+  difficulty: string | null;
+  skill_level: number;
+  extra_notes: string | null;
+  created_at: string;
+}
+
+export interface AIProposal {
+  id: number;
+  source_input_id: number;
+  title: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  category_id: number | null;
+  category?: string;
+  category_color?: string;
+  tags: string[];
+  description: string;
+  examples: Example[];
+  constraints?: string | null;
+  solution?: string | null;
+  solution_explanation?: string | null;
+  test_cases: unknown[];
+  language: string;
+  status: 'pending' | 'accepted' | 'hidden';
+  created_at: string;
+  source_input?: AIInput;
+}
+
+export interface GeneratePayload {
+  topics: string[];
+  languages: string[];
+  goal: 'job' | 'learning';
+  jobRoles?: string[];
+  jobLevel?: 'Junior' | 'Intermediate' | 'Senior';
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
+  skillLevel: number;
+  extraNotes?: string;
+  refinementNote?: string;
+}
+
+export const generateProblems = (payload: GeneratePayload) =>
+  api.post<AIProposal[]>('/ai-problems/generate', payload).then(r => r.data);
+
+export const getProposals = () =>
+  api.get<AIProposal[]>('/ai-problems/proposals').then(r => r.data);
+
+export const acceptProposal = (id: number) =>
+  api.patch<{ problemId: number }>(`/ai-problems/proposals/${id}/accept`).then(r => r.data);
+
+export const hideProposal = (id: number) =>
+  api.patch(`/ai-problems/proposals/${id}/hide`).then(() => undefined);
+
+export const hidePendingProposals = () =>
+  api.patch('/ai-problems/proposals/hide-pending').then(() => undefined);
+
+export const getLastInput = () =>
+  api.get<AIInput | null>('/ai-problems/last-input').then(r => r.data);
+
