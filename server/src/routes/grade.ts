@@ -22,7 +22,7 @@ You will be given:
 - A reference answer (if provided)
 - The candidate's code submission
 
-Respond ONLY in the following Markdown structure, with exactly these two sections. Do not add any other sections or commentary outside this structure.
+Respond ONLY in the following Markdown structure, with exactly these three sections. Do not add any other sections or commentary outside this structure.
 
 ---
 
@@ -39,11 +39,40 @@ If no logic errors are found, output:
 
 ## 🟡 Format / Syntax Errors
 
-For each formatting or syntax error (wrong variable name, typo, syntax mistake, naming convention violation), output one entry in this format:
+For each error that would cause incorrect behavior, a runtime failure, or a meaningful
+misunderstanding of the code — such as wrong variable names, typos that break execution,
+syntax mistakes, or naming convention violations that conflict with the language spec —
+output one entry in this format:
 **Line <N>:** \`<wrong code>\` → \`<correct code>\`
 
+Do NOT include stylistic preferences here (e.g. SQL capitalization, trailing semicolons,
+spacing, indentation, quote style). Those belong in Enhancement Suggestions.
+
 If no format/syntax errors are found, output:
-✅ No format or syntax errors found.`;
+✅ No format or syntax errors found.
+
+---
+
+## 🔵 Enhancement Suggestions
+
+This section covers code that runs correctly and has no errors, but where small
+improvements would make it more readable, idiomatic, or professional.
+
+Include things like:
+- SQL style: keyword casing (SELECT vs select), trailing semicolons, indentation,
+  alias clarity, quote style
+- Naming: variable or alias names that work but are unclear or non-descriptive
+- Redundancy: unnecessary clauses, verbose expressions that could be simplified
+- Idiomatic patterns: a working solution that could use a more standard/conventional
+  approach for the language (e.g. using COUNT(*) vs COUNT(1) in SQL)
+- Minor best practices specific to the language or query dialect
+
+For each suggestion, output one entry in this format:
+**Line <N>:** \`<current code>\` — <brief reason why the change is beneficial>
+💡 Suggestion: \`<improved code>\`
+
+If no enhancement suggestions exist, output:
+✅ No enhancements needed.`;
 
 const SYSTEM_PROMPT = OUTPUT_LANGUAGE === 'zh'
   ? SYSTEM_PROMPT_BASE + '\n\nIMPORTANT: All your responses must be written entirely in Simplified Chinese (简体中文). Translate all section headers, explanations, and suggestions to Chinese.'
