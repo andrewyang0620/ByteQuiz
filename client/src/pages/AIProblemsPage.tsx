@@ -5,7 +5,7 @@ import CodeEditor from '../components/CodeEditor';
 import {
   generateProblems, getProposals, acceptProposal, hideProposal,
   getLastInput, gradeCode,
-  AIProposal, AIInput, GeneratePayload, Example,
+  AIProposal, AIInput, GeneratePayload, Example, GenerationSummary,
 } from '../api';
 
 // ─── TagInput ────────────────────────────────────────────────────────────────
@@ -196,7 +196,7 @@ function ProposalModal({ proposal, onClose }: { proposal: AIProposal; onClose: (
             {proposal.constraints && (
               <>
                 <h3 className="text-sm font-semibold mt-5 mb-2" style={{ color: 'var(--color-text-primary)' }}>Constraints</h3>
-                <pre className="text-xs whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)', fontFamily: 'inherit' }}>{proposal.constraints}</pre>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose-content">{proposal.constraints}</ReactMarkdown>
               </>
             )}
           </div>
@@ -251,7 +251,7 @@ function ProposalModal({ proposal, onClose }: { proposal: AIProposal; onClose: (
               {proposal.solution && (
                 <>
                   <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-text-muted)' }}>Solution Code</p>
-                  <pre className="rounded-lg p-4 text-sm font-mono overflow-x-auto mb-6" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}>{proposal.solution}</pre>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose-content mb-6">{proposal.solution}</ReactMarkdown>
                 </>
               )}
               {proposal.solution_explanation && (
@@ -395,6 +395,7 @@ export default function AIProblemsPage() {
   // Generation
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState('');
+  const [generationSummary, setGenerationSummary] = useState<GenerationSummary | null>(null);
 
   // Field-level validation errors
   const [topicsError, setTopicsError] = useState('');
@@ -515,8 +516,9 @@ export default function AIProblemsPage() {
       } else {
         payload.difficulty = difficulty;
       }
-      const newProposals = await generateProblems(payload);
+      const { proposals: newProposals, generationSummary: summary } = await generateProblems(payload);
       setProposals(prev => [...newProposals, ...prev]);
+      setGenerationSummary(summary);
       setRefinementNote('');
       // Refresh lastInput so the refinement screen reflects the latest session
       getLastInput().then(data => { if (data) setLastInput(data); }).catch(() => {});
@@ -588,6 +590,23 @@ export default function AIProblemsPage() {
             </button>
           </div>
         </div>
+
+        {/* Generation summary card */}
+        {generationSummary && (
+          <div className="rounded-xl px-5 py-4 mb-6" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--color-accent-hover)', letterSpacing: '0.05em' }}>✨ WHY THESE PROBLEMS?</p>
+            <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>{generationSummary.reasoning}</p>
+            {generationSummary.coverage.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Topics covered:</span>
+                {generationSummary.coverage.map(tag => (
+                  <span key={tag} className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--color-accent)', color: 'var(--color-text-primary)' }}>{tag}</span>
+                ))}
+              </div>
+            )}
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{generationSummary.goal_note}</p>
+          </div>
+        )}
 
         {visibleProposals.length === 0 ? (
           <div className="text-center py-16" style={{ color: 'var(--color-text-muted)' }}>

@@ -158,8 +158,14 @@ export interface GeneratePayload {
   refinementNote?: string;
 }
 
+export interface GenerationSummary {
+  reasoning: string;
+  coverage: string[];
+  goal_note: string;
+}
+
 export const generateProblems = (payload: GeneratePayload) =>
-  api.post<AIProposal[]>('/ai-problems/generate', payload).then(r => r.data);
+  api.post<{ proposals: AIProposal[]; generationSummary: GenerationSummary | null }>('/ai-problems/generate', payload).then(r => r.data);
 
 export const getProposals = () =>
   api.get<AIProposal[]>('/ai-problems/proposals').then(r => r.data);

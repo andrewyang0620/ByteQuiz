@@ -247,9 +247,7 @@ export default function ProblemDetailPage() {
           {problem.constraints && (
             <>
               <h3 className="text-sm font-semibold mt-5 mb-2" style={{ color: 'var(--color-text-primary)' }}>Constraints</h3>
-              <pre className="text-xs whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)', fontFamily: 'inherit' }}>
-                {problem.constraints}
-              </pre>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose-content">{problem.constraints}</ReactMarkdown>
             </>
           )}
         </div>
@@ -355,9 +353,7 @@ export default function ProblemDetailPage() {
             {problem.solution && (
               <>
                 <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--color-text-muted)' }}>Solution Code</p>
-                <pre className="rounded-lg p-4 text-sm font-mono overflow-x-auto mb-6" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}>
-                  {problem.solution}
-                </pre>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose-content mb-6">{problem.solution}</ReactMarkdown>
               </>
             )}
             {problem.solution_explanation && (
