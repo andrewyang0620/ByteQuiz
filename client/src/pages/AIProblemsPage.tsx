@@ -396,6 +396,13 @@ export default function AIProblemsPage() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState('');
 
+  // Field-level validation errors
+  const [topicsError, setTopicsError] = useState('');
+  const [languagesError, setLanguagesError] = useState('');
+  const [jobRolesError, setJobRolesError] = useState('');
+  const [extraNotesError, setExtraNotesError] = useState('');
+  const [refinementNoteError, setRefinementNoteError] = useState('');
+
   // Last input (for "Continue from last session")
   const [lastInput, setLastInput] = useState<AIInput | null>(null);
   const [lastInputLoaded, setLastInputLoaded] = useState(false);
@@ -461,8 +468,39 @@ export default function AIProblemsPage() {
     setShowContinueBanner(false);
   };
 
+  const validateInputs = (): boolean => {
+    const isInvalidTag = (tag: string) =>
+      /^\d+$/.test(tag) || /^[^a-zA-Z0-9\u4e00-\u9fff]+$/.test(tag);
+    let valid = true;
+
+    const badTopic = topics.find(isInvalidTag);
+    if (badTopic) { setTopicsError('Tags cannot be purely numeric or symbolic.'); valid = false; }
+    else setTopicsError('');
+
+    const badLang = languages.find(isInvalidTag);
+    if (badLang) { setLanguagesError('Tags cannot be purely numeric or symbolic.'); valid = false; }
+    else setLanguagesError('');
+
+    if (goal === 'job') {
+      const badRole = jobRoles.find(isInvalidTag);
+      if (badRole) { setJobRolesError('Tags cannot be purely numeric or symbolic.'); valid = false; }
+      else setJobRolesError('');
+    } else {
+      setJobRolesError('');
+    }
+
+    if (extraNotes.length > 300) { setExtraNotesError('Maximum 300 characters.'); valid = false; }
+    else setExtraNotesError('');
+
+    if (refinementNote.length > 300) { setRefinementNoteError('Maximum 300 characters.'); valid = false; }
+    else setRefinementNoteError('');
+
+    return valid;
+  };
+
   const handleGenerate = async () => {
     if (!topics.length) { setGenerateError('Please add at least one topic.'); return; }
+    if (!validateInputs()) return;
     setGenerating(true);
     setGenerateError('');
     try {
@@ -484,8 +522,14 @@ export default function AIProblemsPage() {
       getLastInput().then(data => { if (data) setLastInput(data); }).catch(() => {});
       setView('proposals');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setGenerateError(msg || 'Failed to generate problems. Please try again.');
+      const axiosErr = err as { response?: { data?: { error?: string; message?: string } } };
+      const errCode = axiosErr?.response?.data?.error;
+      const errMsg = axiosErr?.response?.data?.message;
+      if (errCode === 'INVALID_INPUT' || errCode === 'INJECTION_DETECTED') {
+        setGenerateError(errMsg ?? 'Invalid input. Please revise your request.');
+      } else {
+        setGenerateError('Failed to generate problems. Please try again.');
+      }
     } finally {
       setGenerating(false);
     }
@@ -606,13 +650,19 @@ export default function AIProblemsPage() {
             </label>
             <textarea
               value={refinementNote}
-              onChange={e => setRefinementNote(e.target.value)}
+              onChange={e => { setRefinementNote(e.target.value); setRefinementNoteError(''); }}
               rows={3}
               placeholder="e.g. 'Make the next problems harder', 'Focus more on edge cases', 'Avoid recursion'"
               className="w-full rounded-lg p-3 text-sm resize-none outline-none"
-              style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+              style={{ background: 'var(--color-bg)', border: `1px solid ${refinementNoteError ? '#ef4444' : 'var(--color-border)'}`, color: 'var(--color-text-primary)' }}
             />
-            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>Leave empty to generate 3 more problems with the same settings.</p>
+            <div className="flex justify-between mt-1">
+              {refinementNoteError
+                ? <span className="text-xs" style={{ color: '#ef4444' }}>{refinementNoteError}</span>
+                : <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Leave empty to generate 3 more problems with the same settings.</p>
+              }
+              <span className="text-xs" style={{ color: refinementNote.length > 280 ? '#ef4444' : 'var(--color-text-muted)' }}>{refinementNote.length} / 300</span>
+            </div>
           </div>
 
           {/* Error */}
@@ -672,13 +722,15 @@ export default function AIProblemsPage() {
         {/* 1. Topics */}
         <div style={SECTION}>
           <label style={LABEL}>Topics <span style={{ color: '#C0392B', fontWeight: 700 }}>*</span></label>
-          <TagInput tags={topics} onChange={setTopics} placeholder="e.g. Algorithms, Tree, Dynamic Programming — press Enter to add" />
+          <TagInput tags={topics} onChange={tags => { setTopics(tags); setTopicsError(''); }} placeholder="e.g. Algorithms, Tree, Dynamic Programming — press Enter to add" />
+          {topicsError && <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{topicsError}</p>}
         </div>
 
         {/* 2. Programming Language */}
         <div style={SECTION}>
           <label style={LABEL}>Programming Language <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(optional)</span></label>
-          <TagInput tags={languages} onChange={setLanguages} placeholder="e.g. Python, SQL — leave empty to auto-detect" />
+          <TagInput tags={languages} onChange={tags => { setLanguages(tags); setLanguagesError(''); }} placeholder="e.g. Python, SQL — leave empty to auto-detect" />
+          {languagesError && <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{languagesError}</p>}
         </div>
 
         {/* 3. Goal */}
@@ -717,7 +769,8 @@ export default function AIProblemsPage() {
           <div style={SECTION}>
             <div className="mb-4">
               <label style={LABEL}>Target Role(s)</label>
-              <TagInput tags={jobRoles} onChange={setJobRoles} placeholder="e.g. SWE, MLE, Data Analyst" />
+              <TagInput tags={jobRoles} onChange={tags => { setJobRoles(tags); setJobRolesError(''); }} placeholder="e.g. SWE, MLE, Data Analyst" />
+              {jobRolesError && <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{jobRolesError}</p>}
             </div>
             <div>
               <label style={LABEL}>Seniority Level</label>
@@ -759,12 +812,16 @@ export default function AIProblemsPage() {
           <label style={LABEL}>Additional Notes <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(optional)</span></label>
           <textarea
             value={extraNotes}
-            onChange={e => setExtraNotes(e.target.value)}
+            onChange={e => { setExtraNotes(e.target.value); setExtraNotesError(''); }}
             rows={3}
             placeholder="Any extra requirements for the AI, e.g. 'Focus on recursive solutions' or 'No built-in sort functions'"
             className="w-full rounded-lg p-3 text-sm resize-none outline-none"
-            style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}
+            style={{ background: 'var(--color-bg)', border: `1px solid ${extraNotesError ? '#ef4444' : 'var(--color-border)'}`, color: 'var(--color-text-primary)' }}
           />
+          <div className="flex justify-between mt-1">
+            {extraNotesError ? <span className="text-xs" style={{ color: '#ef4444' }}>{extraNotesError}</span> : <span />}
+            <span className="text-xs" style={{ color: extraNotes.length > 280 ? '#ef4444' : 'var(--color-text-muted)' }}>{extraNotes.length} / 300</span>
+          </div>
         </div>
 
         {/* Error */}
