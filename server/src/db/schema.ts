@@ -89,5 +89,22 @@ export function initDb(dbPath: string): DatabaseSync {
     // Column already exists — ignore
   }
 
+  // Migration: remove disallowed tags from problems and ai_proposals
+  {
+    const banned = ['Bioinformatics', 'Biology', 'Data Analysis', 'Dynamic Programming',
+      'String Processing', 'Computational Geometry', 'SQL Application', 'SQL Query'];
+    for (const table of ['problems', 'ai_proposals'] as const) {
+      const rows = db.prepare(`SELECT id, tags FROM ${table}`).all() as Array<{ id: number; tags: string }>;
+      for (const row of rows) {
+        let tags: string[];
+        try { tags = JSON.parse(row.tags) as string[]; } catch { continue; }
+        const filtered = tags.filter((t: string) => !banned.includes(t));
+        if (filtered.length !== tags.length) {
+          db.prepare(`UPDATE ${table} SET tags = ? WHERE id = ?`).run(JSON.stringify(filtered), row.id);
+        }
+      }
+    }
+  }
+
   return db;
 }

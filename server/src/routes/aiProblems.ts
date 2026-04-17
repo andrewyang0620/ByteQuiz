@@ -490,7 +490,12 @@ router.post('/generate', async (req: Request, res: Response) => {
     // Store the category name as a string; category is created only on accept.
     const categoryName = (gp.category && typeof gp.category === 'string') ? gp.category.trim() : null;
 
-    const tagsStr = JSON.stringify(Array.isArray(gp.tags) ? gp.tags : []);
+    // Normalize tags: split on commas to turn "Tag1, Tag2" into two separate tags
+    const rawTags = Array.isArray(gp.tags) ? gp.tags : [];
+    const normalizedTags = rawTags.flatMap((t: string) =>
+      t.split(',').map((s: string) => s.trim()).filter(Boolean)
+    );
+    const tagsStr = JSON.stringify(normalizedTags);
     const examplesStr = JSON.stringify(Array.isArray(gp.examples) ? gp.examples : []);
     const testCasesStr = JSON.stringify(Array.isArray(gp.test_cases) ? gp.test_cases : []);
     const difficulty = (['Easy', 'Medium', 'Hard'] as const).includes(gp.difficulty) ? gp.difficulty : 'Medium';

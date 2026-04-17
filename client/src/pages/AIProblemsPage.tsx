@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useBlocker } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CodeEditor from '../components/CodeEditor';
@@ -413,12 +412,9 @@ export default function AIProblemsPage() {
   // Proposal detail modal
   const [selectedProposal, setSelectedProposal] = useState<AIProposal | null>(null);
 
-  // Exit modal (navigation blocker)
-  const [showExitModal, setShowExitModal] = useState(false);
-
   // Cache panel
   const [showCachePanel, setShowCachePanel] = useState(false);
-  const [cacheRows, setCacheRows] = useState<Array<{ category_id: number | null; category_name: string | null; hidden_count: number }>>([]);
+  const [cacheRows, setCacheRows] = useState<Array<{ category_id: number | null; category_name: string | null; hidden_count: number }>>([]); 
 
   // Pending count (for beforeunload warning)
   const pendingCount = proposals.filter(p => p.status === 'pending').length;
@@ -430,18 +426,6 @@ export default function AIProblemsPage() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [pendingCount]);
-
-  // Block in-app navigation when there are pending proposals
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      pendingCount > 0 && currentLocation.pathname !== nextLocation.pathname
-  );
-
-  useEffect(() => {
-    if (blocker.state === 'blocked') {
-      setShowExitModal(true);
-    }
-  }, [blocker.state]);
 
   // Load last input on mount
   useEffect(() => {
@@ -726,36 +710,6 @@ export default function AIProblemsPage() {
         {selectedProposal && (
           <ProposalModal proposal={selectedProposal} onClose={() => setSelectedProposal(null)} />
         )}
-
-        {/* Exit modal */}
-        {showExitModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <div className="rounded-xl p-6 max-w-sm w-full mx-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Leave AI Problems?</h3>
-              <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-                You have {pendingCount} unsaved generated problem{pendingCount > 1 ? 's' : ''}. They\'ll be hidden from view but kept for future generation context.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <button
-                  className="btn-secondary text-sm px-4 py-2"
-                  onClick={() => { setShowExitModal(false); blocker.reset?.(); }}
-                >
-                  Stay
-                </button>
-                <button
-                  className="btn-primary text-sm px-4 py-2"
-                  onClick={async () => {
-                    await hidePendingProposals().catch(() => {});
-                    setShowExitModal(false);
-                    blocker.proceed?.();
-                  }}
-                >
-                  Exit & Hide
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -840,36 +794,6 @@ export default function AIProblemsPage() {
             🔧 Switch to Full Form — change topics, difficulty, etc.
           </button>
         </div>
-
-        {/* Exit modal */}
-        {showExitModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <div className="rounded-xl p-6 max-w-sm w-full mx-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Leave AI Problems?</h3>
-              <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-                You have {pendingCount} unsaved generated problem{pendingCount > 1 ? 's' : ''}. They\'ll be hidden from view but kept for future generation context.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <button
-                  className="btn-secondary text-sm px-4 py-2"
-                  onClick={() => { setShowExitModal(false); blocker.reset?.(); }}
-                >
-                  Stay
-                </button>
-                <button
-                  className="btn-primary text-sm px-4 py-2"
-                  onClick={async () => {
-                    await hidePendingProposals().catch(() => {});
-                    setShowExitModal(false);
-                    blocker.proceed?.();
-                  }}
-                >
-                  Exit & Hide
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -1027,36 +951,6 @@ export default function AIProblemsPage() {
           </button>
         )}
       </div>
-
-      {/* Exit modal */}
-      {showExitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="rounded-xl p-6 max-w-sm w-full mx-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h3 className="font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>Leave AI Problems?</h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-              You have {pendingCount} unsaved generated problem{pendingCount > 1 ? 's' : ''}. They'll be hidden from view but kept for future generation context.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                className="btn-secondary text-sm px-4 py-2"
-                onClick={() => { setShowExitModal(false); blocker.reset?.(); }}
-              >
-                Stay
-              </button>
-              <button
-                className="btn-primary text-sm px-4 py-2"
-                onClick={async () => {
-                  await hidePendingProposals().catch(() => {});
-                  setShowExitModal(false);
-                  blocker.proceed?.();
-                }}
-              >
-                Exit & Hide
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
