@@ -179,6 +179,16 @@ export const hideProposal = (id: number) =>
 export const hidePendingProposals = () =>
   api.patch('/ai-problems/proposals/hide-pending').then(() => undefined);
 
+export const getGenerationCache = (): Promise<Array<{
+  category_id: number | null;
+  category_name: string | null;
+  hidden_count: number;
+}>> =>
+  api.get('/ai-problems/cache').then(r => r.data);
+
+export const clearGenerationCache = (categoryId?: number): Promise<void> =>
+  api.delete(`/ai-problems/cache${categoryId !== undefined ? `?category_id=${categoryId}` : ''}`).then(() => undefined);
+
 export const getLastInput = () =>
   api.get<AIInput | null>('/ai-problems/last-input').then(r => r.data);
 

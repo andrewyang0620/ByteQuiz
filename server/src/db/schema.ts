@@ -82,5 +82,12 @@ export function initDb(dbPath: string): DatabaseSync {
     );
   `);
 
+  // Migration: add category_name to ai_proposals
+  try {
+    db.exec('ALTER TABLE ai_proposals ADD COLUMN category_name TEXT');
+  } catch {
+    // Column already exists — ignore
+  }
+
   return db;
 }

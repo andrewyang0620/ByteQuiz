@@ -386,11 +386,11 @@ router.post('/generate', async (req: Request, res: Response) => {
   );
   const inputId = inputResult.lastInsertRowid as number;
 
-  // Build deduplication context from existing problems + non-hidden proposals
+  // Build deduplication context from ALL proposals (including hidden) to prevent regeneration
   const existingProblems = db.prepare(`
     SELECT title, difficulty, tags FROM problems
     UNION ALL
-    SELECT title, difficulty, tags FROM ai_proposals WHERE status != 'hidden'
+    SELECT title, difficulty, tags FROM ai_proposals
   `).all() as Array<{ title: string; difficulty: string; tags: string }>;
 
   const userPrompt = buildUserPrompt(body, existingProblems);
@@ -486,17 +486,9 @@ router.post('/generate', async (req: Request, res: Response) => {
   // Insert each generated problem as an ai_proposal
   const proposals: Record<string, unknown>[] = [];
   for (const gp of generated) {
-    // Find or create category by name (case-insensitive)
-    let categoryId: number | null = null;
-    if (gp.category && typeof gp.category === 'string') {
-      const existing = db.prepare('SELECT id FROM categories WHERE lower(name) = lower(?)').get(gp.category) as { id: number } | undefined;
-      if (existing) {
-        categoryId = existing.id;
-      } else {
-        const catResult = db.prepare("INSERT INTO categories (name, color) VALUES (?, '#A8C4A0')").run(gp.category);
-        categoryId = catResult.lastInsertRowid as number;
-      }
-    }
+    // Do NOT create categories at generate time.
+    // Store the category name as a string; category is created only on accept.
+    const categoryName = (gp.category && typeof gp.category === 'string') ? gp.category.trim() : null;
 
     const tagsStr = JSON.stringify(Array.isArray(gp.tags) ? gp.tags : []);
     const examplesStr = JSON.stringify(Array.isArray(gp.examples) ? gp.examples : []);
@@ -505,13 +497,14 @@ router.post('/generate', async (req: Request, res: Response) => {
 
     const result = db.prepare(`
       INSERT INTO ai_proposals
-        (source_input_id, title, difficulty, category_id, tags, description, examples, constraints, solution, solution_explanation, test_cases, language)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (source_input_id, title, difficulty, category_id, category_name, tags, description, examples, constraints, solution, solution_explanation, test_cases, language)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       inputId,
       gp.title ?? 'Untitled',
       difficulty,
-      categoryId,
+      null,
+      categoryName,
       tagsStr,
       gp.description ?? '',
       examplesStr,
@@ -532,6 +525,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 
     proposals.push({
       ...row,
+      category: row.category ?? row.category_name,
       tags: JSON.parse(row.tags as string),
       examples: JSON.parse(row.examples as string),
       test_cases: JSON.parse(row.test_cases as string),
@@ -618,10 +612,26 @@ router.patch('/proposals/:id/accept', (req: Request, res: Response) => {
     return;
   }
 
-  // Find a valid category_id or fall back to Uncategorized
-  let categoryId = proposal.category_id as number | null;
+  // Find or create category from the stored category_name
+  let categoryId: number | null = null;
+  const categoryName = proposal.category_name as string | null;
+
+  if (categoryName) {
+    const existing = db.prepare('SELECT id FROM categories WHERE lower(name) = lower(?)')
+      .get(categoryName) as { id: number } | undefined;
+    if (existing) {
+      categoryId = existing.id;
+    } else {
+      const catResult = db.prepare("INSERT INTO categories (name, color) VALUES (?, '#A8C4A0')")
+        .run(categoryName);
+      categoryId = catResult.lastInsertRowid as number;
+    }
+  }
+
+  // Fallback to Uncategorized if still null
   if (!categoryId) {
-    const uncategorized = db.prepare("SELECT id FROM categories WHERE lower(name) = 'uncategorized' LIMIT 1").get() as { id: number } | undefined;
+    const uncategorized = db.prepare("SELECT id FROM categories WHERE lower(name) = 'uncategorized' LIMIT 1")
+      .get() as { id: number } | undefined;
     categoryId = uncategorized?.id ?? null;
   }
 
@@ -674,6 +684,72 @@ router.get('/last-input', (req: Request, res: Response) => {
     extra_notes: row.extra_notes,
     created_at: row.created_at,
   });
+});
+
+// GET /api/ai-problems/cache
+router.get('/cache', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const rows = db.prepare(`
+    SELECT
+      p.category_id,
+      COALESCE(c.name, p.category_name) AS category_name,
+      COUNT(p.id) AS hidden_count
+    FROM ai_proposals p
+    LEFT JOIN categories c ON c.id = p.category_id
+    WHERE p.status = 'hidden'
+    GROUP BY p.category_id, p.category_name
+    ORDER BY hidden_count DESC
+  `).all() as Array<{ category_id: number | null; category_name: string | null; hidden_count: number }>;
+
+  res.json(rows);
+});
+
+// DELETE /api/ai-problems/cache
+router.delete('/cache', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const categoryId = req.query.category_id;
+
+  if (categoryId) {
+    db.prepare('DELETE FROM ai_proposals WHERE status = \'hidden\' AND category_id = ?')
+      .run(Number(categoryId));
+  } else {
+    db.prepare('DELETE FROM ai_proposals WHERE status = \'hidden\'').run();
+  }
+
+  res.json({ ok: true });
+});
+
+// GET /api/ai-problems/cache
+router.get('/cache', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const rows = db.prepare(`
+    SELECT
+      p.category_id,
+      COALESCE(c.name, p.category_name) AS category_name,
+      COUNT(p.id) AS hidden_count
+    FROM ai_proposals p
+    LEFT JOIN categories c ON c.id = p.category_id
+    WHERE p.status = 'hidden'
+    GROUP BY p.category_id, p.category_name
+    ORDER BY hidden_count DESC
+  `).all() as Array<{ category_id: number | null; category_name: string | null; hidden_count: number }>;
+
+  res.json(rows);
+});
+
+// DELETE /api/ai-problems/cache
+router.delete('/cache', (req: Request, res: Response) => {
+  const db = getDb(req);
+  const categoryId = req.query.category_id;
+
+  if (categoryId) {
+    db.prepare('DELETE FROM ai_proposals WHERE status = \'hidden\' AND category_id = ?')
+      .run(Number(categoryId));
+  } else {
+    db.prepare('DELETE FROM ai_proposals WHERE status = \'hidden\'').run();
+  }
+
+  res.json({ ok: true });
 });
 
 export default router;

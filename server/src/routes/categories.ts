@@ -92,8 +92,13 @@ router.delete('/:id', (req: Request, res: Response) => {
 
   if (!cat) { res.status(404).json({ error: 'Category not found.' }); return; }
 
-  const { n } = db.prepare('SELECT COUNT(*) as n FROM problems WHERE category_id = ?')
-    .get(req.params.id) as { n: number };
+  const { n } = db.prepare(`
+    SELECT (
+      SELECT COUNT(*) FROM problems WHERE category_id = ?
+    ) + (
+      SELECT COUNT(*) FROM ai_proposals WHERE category_id = ? AND status != 'hidden'
+    ) as n
+  `).get(req.params.id, req.params.id) as { n: number };
 
   if (n > 0 && req.query.force !== 'true') {
     // Return 409 so frontend can show a confirmation with problem count
@@ -116,6 +121,8 @@ router.delete('/:id', (req: Request, res: Response) => {
     }
     db.prepare('UPDATE problems SET category_id = ? WHERE category_id = ?')
       .run(fallback.id, cat.id);
+    db.prepare('UPDATE ai_proposals SET category_id = NULL WHERE category_id = ?')
+      .run(cat.id);
   }
 
   db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
