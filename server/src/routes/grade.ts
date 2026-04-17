@@ -27,30 +27,44 @@ When referencing a line, always use the exact number shown before the | characte
 
 Respond ONLY in the following Markdown structure, with exactly these three sections. Do not add any other sections or commentary outside this structure.
 
-CLASSIFICATION RULES — read before evaluating:
+CLASSIFICATION RULES — read carefully before evaluating:
 
-1. Every identified issue must appear in EXACTLY ONE section. Never repeat the same
-   issue across multiple sections.
+STEP 1 — Before classifying anything, ask: "Is this a surface-level mistake?"
+Surface-level mistakes are: typos in variable names, method name misspellings,
+wrong punctuation, indentation errors, missing/extra brackets, wrong casing on
+identifiers, incorrect parameter names. These are ALWAYS 🟡 Format / Syntax Errors.
+They must NEVER appear in 🔴 Logic Errors, even if fixing them would change the output.
+The test is: "Did the candidate make a typing/spelling mistake?" If yes → 🟡 only.
 
-2. To decide which section an issue belongs to, apply this decision order:
-   - Does it cause incorrect output, wrong logic, or a wrong algorithmic approach?
-     → 🔴 Logic Errors ONLY
-   - Does it cause a runtime failure, execution error, or broken syntax that prevents
-     the code from running at all?
-     → 🟡 Format / Syntax Errors ONLY
-   - Does the code run correctly and produce the right output, but could be written
-     better?
-     → 🔵 Enhancement Suggestions ONLY
+STEP 2 — A 🔴 Logic Error is reserved exclusively for flaws in algorithmic thinking
+or problem-solving reasoning: wrong algorithm choice, incorrect formula, missing edge
+case handling, wrong conditional logic, incorrect data structure usage, wrong
+aggregation or grouping strategy. The candidate understood the syntax but reasoned
+incorrectly about the problem. If the mistake could have been caught by a spell-checker
+or linter rather than by thinking about the problem — it is NOT a 🔴 Logic Error.
 
-3. Logic takes priority over syntax: if a line has both a logic flaw and a syntax
-   issue, classify it under 🔴 Logic Errors only.
+STEP 3 — Every issue appears in EXACTLY ONE section. Once classified, it does not
+appear anywhere else — not even as a note or cross-reference in parentheses.
 
-4. If you are uncertain between 🟡 and 🔵, ask: "Would this cause the code to fail?"
-   Yes → 🟡. No → 🔵.
+STEP 4 — Classification order:
+  Is it a surface-level typo/spelling/punctuation/indentation mistake?
+  → 🟡 Format / Syntax Errors. Stop. Do not also add to 🔴.
+
+  Is it a wrong algorithm, wrong formula, wrong logic, missing edge case?
+  → 🔴 Logic Errors. Stop. Do not also add to 🟡.
+
+  Does the code run correctly but could be more efficient, cleaner, or safer?
+  → 🔵 Enhancement Suggestions. Stop.
 
 ---
 
 ## 🔴 Logic Errors
+
+The following are NEVER logic errors and must not appear in this section under any
+circumstances: variable name typos, method name misspellings, wrong punctuation,
+indentation, missing semicolons, bracket mismatches, parameter name mistakes,
+identifier casing. If you find yourself writing a Logic Error entry about a typo
+or spelling mistake, move it to 🟡 instead.
 
 For each logic error found, output one entry in this format:
 **Line <N>:** \`<original code on that line>\` — <explanation of the error>
