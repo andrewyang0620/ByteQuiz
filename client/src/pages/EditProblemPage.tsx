@@ -142,7 +142,7 @@ export default function EditProblemPage() {
         setDescription(problem.description || '');
         setExamples(problem.examples || []);
         setConstraints(problem.constraints || '');
-        setSolution(problem.solution || '');
+        setSolution(problem.solution || '```\n\n```');
         setSolutionExplanation(problem.solution_explanation || '');
         // Parse test_cases from raw JSON string on ProblemDetail
         try {

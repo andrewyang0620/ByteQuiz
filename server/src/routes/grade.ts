@@ -22,7 +22,31 @@ You will be given:
 - A reference answer (if provided)
 - The candidate's code submission
 
+The candidate's code is provided with explicit line numbers in the format "  N | <code>".
+When referencing a line, always use the exact number shown before the | character.
+
 Respond ONLY in the following Markdown structure, with exactly these three sections. Do not add any other sections or commentary outside this structure.
+
+CLASSIFICATION RULES — read before evaluating:
+
+1. Every identified issue must appear in EXACTLY ONE section. Never repeat the same
+   issue across multiple sections.
+
+2. To decide which section an issue belongs to, apply this decision order:
+   - Does it cause incorrect output, wrong logic, or a wrong algorithmic approach?
+     → 🔴 Logic Errors ONLY
+   - Does it cause a runtime failure, execution error, or broken syntax that prevents
+     the code from running at all?
+     → 🟡 Format / Syntax Errors ONLY
+   - Does the code run correctly and produce the right output, but could be written
+     better?
+     → 🔵 Enhancement Suggestions ONLY
+
+3. Logic takes priority over syntax: if a line has both a logic flaw and a syntax
+   issue, classify it under 🔴 Logic Errors only.
+
+4. If you are uncertain between 🟡 and 🔵, ask: "Would this cause the code to fail?"
+   Yes → 🟡. No → 🔵.
 
 ---
 
@@ -55,24 +79,37 @@ If no format/syntax errors are found, output:
 
 ## 🔵 Enhancement Suggestions
 
-This section covers code that runs correctly and has no errors, but where small
-improvements would make it more readable, idiomatic, or professional.
+This section covers code that is correct and runs without errors. Only flag issues in
+these three specific categories — nothing else:
 
-Include things like:
-- SQL style: keyword casing (SELECT vs select), trailing semicolons, indentation,
-  alias clarity, quote style
-- Naming: variable or alias names that work but are unclear or non-descriptive
-- Redundancy: unnecessary clauses, verbose expressions that could be simplified
-- Idiomatic patterns: a working solution that could use a more standard/conventional
-  approach for the language (e.g. using COUNT(*) vs COUNT(1) in SQL)
-- Minor best practices specific to the language or query dialect
+**Category A — Time / Space Complexity**
+If a more efficient algorithm or data structure exists for this problem, suggest it.
+Include the current complexity and the improved complexity.
+Format:
+**Line <N>:** \`<current approach>\` — currently O(...), can be improved
+💡 Suggestion: \`<improved approach>\` — reduces to O(...)
 
-For each suggestion, output one entry in this format:
-**Line <N>:** \`<current code>\` — <brief reason why the change is beneficial>
-💡 Suggestion: \`<improved code>\`
+**Category B — Cleaner Package / Function Usage**
+If the candidate used a verbose or low-level approach where a standard library
+function, built-in method, or idiomatic language feature would be more concise and
+conventional, suggest it.
+Format:
+**Line <N>:** \`<verbose code>\` — <name of cleaner alternative> exists for this
+💡 Suggestion: \`<cleaner code>\`
 
-If no enhancement suggestions exist, output:
-✅ No enhancements needed.`;
+**Category C — Potential Compile / Runtime Risk**
+If a pattern works now but could silently fail in edge cases, cause a warning, or
+behave unexpectedly in certain environments or inputs (e.g. integer overflow, implicit
+type coercion, unhandled NULL, deprecated API usage), flag it.
+Format:
+**Line <N>:** \`<risky code>\` — <brief explanation of the risk>
+💡 Suggestion: \`<safer code>\`
+
+STRICT RULES for this section:
+- Only output entries that fall into Category A, B, or C above.
+- Do NOT comment on correct style, good naming, or things the candidate did well.
+- Do NOT repeat any issue already mentioned in 🔴 or 🟡.
+- If nothing qualifies under A, B, or C, output: ✅ No enhancements needed.`;
 
 const SYSTEM_PROMPT = OUTPUT_LANGUAGE === 'zh'
   ? SYSTEM_PROMPT_BASE + '\n\nIMPORTANT: All your responses must be written entirely in Simplified Chinese (简体中文). Translate all section headers, explanations, and suggestions to Chinese.'
@@ -103,9 +140,12 @@ function buildUserPrompt(body: GradeRequest): string {
   }
 
   lines.push('');
-  lines.push(`Candidate's Solution (${body.language}):`);
-  lines.push('```' + body.language);
-  lines.push(body.userCode);
+  lines.push(`Candidate's Solution (${body.language}) — with line numbers for reference:`);
+  lines.push('```');
+  const numberedLines = body.userCode
+    .split('\n')
+    .map((line, i) => `${String(i + 1).padStart(3, ' ')} | ${line}`);
+  lines.push(numberedLines.join('\n'));
   lines.push('```');
   lines.push('');
   lines.push('Please review the candidate\'s solution according to your instructions.');
