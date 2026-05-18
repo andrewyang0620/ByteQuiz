@@ -11,3 +11,4 @@ server/dist/
 *.env
 server/.env
 *.log
+temp/
