@@ -130,7 +130,7 @@ export default function AddProblemPage() {
   const [description, setDescription] = useState('');
   const [examples, setExamples] = useState<Example[]>([]);
   const [constraints, setConstraints] = useState('');
-  const [solution, setSolution] = useState('');
+  const [solution, setSolution] = useState('```\n\n```');
   const [solutionExplanation, setSolutionExplanation] = useState('');
   const [testCases, setTestCases] = useState<TestCaseForm[]>([]);
 

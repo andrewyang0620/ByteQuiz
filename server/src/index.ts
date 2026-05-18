@@ -7,6 +7,7 @@ import { seedDb } from './db/seed';
 import problemsRouter from './routes/problems';
 import categoriesRouter from './routes/categories';
 import gradeRouter from './routes/grade';
+import aiProblemsRouter from './routes/aiProblems';
 
 const app = express();
 const PORT = process.env.PORT || 47291;
@@ -30,6 +31,7 @@ app.locals.db = db;
 app.use('/api/problems', problemsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/grade', gradeRouter);
+app.use('/api/ai-problems', aiProblemsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

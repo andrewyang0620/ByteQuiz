@@ -47,5 +47,64 @@ export function initDb(dbPath: string): DatabaseSync {
     // Column already exists — ignore
   }
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ai_inputs (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      topics      TEXT NOT NULL,
+      languages   TEXT NOT NULL,
+      goal        TEXT NOT NULL,
+      job_roles   TEXT,
+      job_level   TEXT,
+      difficulty  TEXT,
+      skill_level INTEGER NOT NULL,
+      extra_notes TEXT,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ai_proposals (
+      id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+      source_input_id      INTEGER NOT NULL REFERENCES ai_inputs(id),
+      title                TEXT NOT NULL,
+      difficulty           TEXT CHECK(difficulty IN ('Easy','Medium','Hard')) NOT NULL,
+      category_id          INTEGER REFERENCES categories(id),
+      tags                 TEXT NOT NULL DEFAULT '[]',
+      description          TEXT NOT NULL,
+      examples             TEXT NOT NULL DEFAULT '[]',
+      constraints          TEXT,
+      solution             TEXT,
+      solution_explanation TEXT,
+      test_cases           TEXT NOT NULL DEFAULT '[]',
+      language             TEXT NOT NULL DEFAULT 'javascript',
+      status               TEXT NOT NULL DEFAULT 'pending',
+      created_at           DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Migration: add category_name to ai_proposals
+  try {
+    db.exec('ALTER TABLE ai_proposals ADD COLUMN category_name TEXT');
+  } catch {
+    // Column already exists — ignore
+  }
+
+  // Migration: remove disallowed tags from problems and ai_proposals
+  {
+    const banned = ['Bioinformatics', 'Biology', 'Data Analysis', 'Dynamic Programming',
+      'String Processing', 'Computational Geometry', 'SQL Application', 'SQL Query'];
+    for (const table of ['problems', 'ai_proposals'] as const) {
+      const rows = db.prepare(`SELECT id, tags FROM ${table}`).all() as Array<{ id: number; tags: string }>;
+      for (const row of rows) {
+        let tags: string[];
+        try { tags = JSON.parse(row.tags) as string[]; } catch { continue; }
+        const filtered = tags.filter((t: string) => !banned.includes(t));
+        if (filtered.length !== tags.length) {
+          db.prepare(`UPDATE ${table} SET tags = ? WHERE id = ?`).run(JSON.stringify(filtered), row.id);
+        }
+      }
+    }
+  }
+
   return db;
 }

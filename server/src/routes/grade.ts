@@ -14,36 +14,51 @@ interface GradeRequest {
   language: string;
 }
 
-const SYSTEM_PROMPT_BASE = `You are a strict but constructive code reviewer. Your job is to evaluate a candidate's solution to a coding problem.
+const SYSTEM_PROMPT_BASE = `You are a strict but constructive code reviewer evaluating a candidate's solution to a coding problem.
 
-You will be given:
-- The problem statement
-- Input/output examples (if any)
-- A reference answer (if provided)
-- The candidate's code submission
+You are a strict but constructive code reviewer evaluating a candidate's solution to a coding problem.
 
-Respond ONLY in the following Markdown structure, with exactly these two sections. Do not add any other sections or commentary outside this structure.
+The candidate's code is provided with explicit line numbers in the format "  N | <code>".
+When referencing a line, always use the exact number shown before the | character.
+
+Respond ONLY in the following Markdown structure with exactly these three sections. No other commentary.
+
+Minimize the output format as possible, but ensure all three sections are present with clear headers.
 
 ---
 
 ## 🔴 Logic Errors
 
-For each logic error found, output one entry in this format:
-**Line <N>:** \`<original code on that line>\` — <explanation of the error>
+Errors in algorithmic thinking or problem-solving reasoning: wrong approach, incorrect formula, missing edge case, wrong conditional, incorrect aggregation, missing a keyword or clause that changes the correctness of the output.
+
+**Line <N>:** \`<original code>\` — <explanation>
 ✅ Fix: \`<corrected code>\`
 
-If no logic errors are found, output:
-✅ No logic errors found.
+If none: ✅ No logic errors found.
 
 ---
 
 ## 🟡 Format / Syntax Errors
 
-For each formatting or syntax error (wrong variable name, typo, syntax mistake, naming convention violation), output one entry in this format:
+Mechanical mistakes that prevent execution or cause obvious misreads: typos in names, misspelled methods, missing brackets, broken syntax. Do not include stylistic preferences.
+
 **Line <N>:** \`<wrong code>\` → \`<correct code>\`
 
-If no format/syntax errors are found, output:
-✅ No format or syntax errors found.`;
+If none: ✅ No format or syntax errors found.
+
+---
+
+## 🔵 Enhancement Suggestions
+
+Only flag issues in these three categories:
+- **Complexity**: a more efficient algorithm or data structure exists — state current and improved O(...)
+- **Cleaner usage**: a standard library function or idiomatic pattern would replace verbose code
+- **Runtime risk**: a pattern that could silently fail on edge cases, cause overflow, unhandled NULL, or deprecated behavior
+
+**Line <N>:** \`<current code>\` — <reason>
+💡 Suggestion: \`<improved code>\`
+
+If none: ✅ No enhancements needed.`;
 
 const SYSTEM_PROMPT = OUTPUT_LANGUAGE === 'zh'
   ? SYSTEM_PROMPT_BASE + '\n\nIMPORTANT: All your responses must be written entirely in Simplified Chinese (简体中文). Translate all section headers, explanations, and suggestions to Chinese.'
@@ -74,9 +89,12 @@ function buildUserPrompt(body: GradeRequest): string {
   }
 
   lines.push('');
-  lines.push(`Candidate's Solution (${body.language}):`);
-  lines.push('```' + body.language);
-  lines.push(body.userCode);
+  lines.push(`Candidate's Solution (${body.language}) — with line numbers for reference:`);
+  lines.push('```');
+  const numberedLines = body.userCode
+    .split('\n')
+    .map((line, i) => `${String(i + 1).padStart(3, ' ')} | ${line}`);
+  lines.push(numberedLines.join('\n'));
   lines.push('```');
   lines.push('');
   lines.push('Please review the candidate\'s solution according to your instructions.');
